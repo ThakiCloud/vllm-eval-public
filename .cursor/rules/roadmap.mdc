@@ -1,0 +1,152 @@
+---
+description: "TODO: add description"
+globs: 
+alwaysApply: false
+---
+# Roadmap
+
+## 개발 로드맵 (8주 계획)
+
+### Phase 1: 기반 인프라 구축 (W1-2)
+**목표**: 데이터 파이프라인 및 기본 인프라 설정
+
+#### W1: 데이터셋 정의 & 적재
+- **데이터셋 스키마** 설계 및 검증
+- **MinIO** 클러스터 구축 및 bucket 설정
+- **SHA-256 기반 버전 체계** 구현
+- **데이터셋 매니페스트** YAML 표준 정의
+
+**산출물**:
+- `datasets/schema.yaml` - 데이터셋 스키마 정의
+- `datasets/README.md` - 데이터 관리 가이드
+- MinIO 클러스터 구축 완료
+
+#### W2: 중복 제거 파이프라인
+- **MinHash-LSH** 알고리즘 구현
+- **Levenshtein Distance** 필터링 로직
+- **dedup_datasets.py** 스크립트 개발
+- **자동화된 중복 제거** 워크플로 구성
+
+**산출물**:
+- `scripts/dedup_datasets.py` - 중복 제거 스크립트
+- 중복 제거 성능 벤치마크 리포트
+
+### Phase 2: 평가 엔진 개발 (W3-4)
+**목표**: Deepeval 및 Evalchemy 통합
+
+#### W3: Deepeval 메트릭 프로토타입
+- **커스텀 메트릭** 개발 (RAG 정답률, Hallucination)
+- **PyTest 스타일** 테스트 스위트 구성
+- **메트릭 레지스트리** 시스템 구현
+- **단위 테스트** 및 검증
+
+**산출물**:
+- `eval/deepeval_tests/metrics/rag_precision.py`
+- `eval/deepeval_tests/test_llm_rag.py`
+- 메트릭 성능 베이스라인 측정
+
+#### W4: Evalchemy 벤치마크 통합
+- **표준 벤치마크** 설정 (ARC, HellaSwag, MMLU)
+- **한국어 벤치마크** 추가 (Ko-MMLU, Ko-ARC)
+- **GPU 최적화** 및 병렬 처리
+- **벤치마크 결과** 표준화
+
+**산출물**:
+- `eval/evalchemy/configs/eval_config.json`
+- `eval/evalchemy/run_evalchemy.sh`
+- 벤치마크 성능 비교 리포트
+
+### Phase 3: CI/CD 통합 (W5-6)
+**목표**: Argo Workflow 및 자동화 구축
+
+#### W5: Argo Workflow 파이프라인
+- **4-Step DAG** 워크플로 설계
+- **Argo Events** 센서 및 트리거 설정
+- **GHCR Webhook** 연동
+- **컨테이너 이미지** 빌드 자동화
+
+**산출물**:
+- `infra/argo-workflows/` - 워크플로 매니페스트
+- `infra/argo-events/` - 이벤트 센서 설정
+- `.github/workflows/image-build.yml`
+
+#### W6: Teams 알림 시스템
+- **Microsoft Teams Webhook** 통합
+- **Adaptive Card** 템플릿 설계
+- **Regression Alert** 로직 구현
+- **알림 규칙** 및 임계값 설정
+
+**산출물**:
+- `infra/teams-webhook/` - Teams 통합 설정
+- Adaptive Card 템플릿 라이브러리
+- 알림 테스트 및 검증 완료
+
+### Phase 4: 모니터링 & 대시보드 (W7)
+**목표**: 관찰성 및 운영 도구 구축
+
+#### W7: Grafana 대시보드 & ClickHouse
+- **ClickHouse** 클러스터 구축
+- **결과 스키마** 설계 및 테이블 생성
+- **Grafana 대시보드** "LLM Quality Overview" 개발
+- **Prometheus 메트릭** 수집 설정
+- **리텐션 정책** 및 백업 전략
+
+**산출물**:
+- `charts/clickhouse/` - ClickHouse Helm 차트
+- `charts/grafana/` - Grafana 대시보드 설정
+- `scripts/aggregate_metrics.py` - 메트릭 집계 스크립트
+
+### Phase 5: 파일럿 & 최적화 (W8)
+**목표**: 내부 테스트 및 성능 튜닝
+
+#### W8: 파일럿 릴리스 & 피드백
+- **내부 파일럿** 테스트 실행
+- **성능 최적화** 및 병목 지점 해결
+- **사용자 피드백** 수집 및 반영
+- **문서화** 및 운영 가이드 작성
+- **Prod Go-Live** 준비
+
+**산출물**:
+- 파일럿 테스트 결과 리포트
+- 성능 최적화 결과
+- 운영 가이드 문서
+- Go-Live 체크리스트
+
+## 마일스톤
+
+| 주차 | 마일스톤 | 성공 기준 |
+|------|----------|-----------|
+| W2 | 데이터 파이프라인 완료 | 중복 제거율 > 90% |
+| W4 | 평가 엔진 통합 | 모든 벤치마크 실행 성공 |
+| W6 | CI/CD 자동화 | end-to-end 파이프라인 동작 |
+| W7 | 모니터링 구축 | 실시간 대시보드 운영 |
+| W8 | Prod 준비 완료 | SLA 목표 달성 |
+
+## 향후 확장 계획 (Q2-Q4)
+
+### Q2: 고도화
+- **Multi-model** 동시 평가 지원
+- **A/B Testing** 프레임워크 통합
+- **Cost Optimization** (Spot GPU 활용)
+
+### Q3: 확장
+- **Multi-cluster** 지원
+- **Custom Benchmark** 플랫폼 구축
+- **API Gateway** 외부 통합
+
+### Q4: 지능화
+- **AutoML** 기반 하이퍼파라미터 튜닝
+- **Anomaly Detection** 고도화
+- **Predictive Analytics** 품질 예측
+
+## 위험 관리
+
+### 기술적 위험
+- **GPU 리소스 부족** → Spot Instance + Auto-scaling
+- **벤치마크 시간 과다** → 샘플링 전략 적용
+- **데이터 품질 이슈** → 검증 파이프라인 강화
+
+### 운영적 위험
+- **팀 리소스 부족** → 우선순위 조정 및 외부 지원
+- **기술 스택 복잡성** → 단계적 도입 및 교육
+- **사용자 채택률** → Early Adopter 프로그램 운영

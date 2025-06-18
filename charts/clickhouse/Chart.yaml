@@ -1,0 +1,31 @@
+apiVersion: v2
+name: clickhouse
+description: ClickHouse database for VLLM evaluation metrics storage
+type: application
+version: 0.1.0
+appVersion: "24.8.5"
+
+keywords:
+  - clickhouse
+  - database
+  - analytics
+  - vllm
+  - metrics
+
+home: https://github.com/your-org/vllm-eval
+sources:
+  - https://github.com/ClickHouse/ClickHouse
+
+maintainers:
+  - name: VLLM Eval Team
+    email: vllm-eval@company.com
+
+dependencies:
+  - name: clickhouse
+    version: "6.2.5"
+    repository: https://charts.bitnami.com/bitnami
+    condition: clickhouse.enabled
+
+annotations:
+  category: Database
+  licenses: Apache-2.0 

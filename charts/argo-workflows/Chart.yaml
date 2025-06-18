@@ -1,0 +1,31 @@
+apiVersion: v2
+name: argo-workflows
+description: Argo Workflows for VLLM Evaluation Pipeline
+type: application
+version: 0.1.0
+appVersion: "v3.5.2"
+
+keywords:
+  - argo
+  - workflows
+  - vllm
+  - evaluation
+  - ci-cd
+
+home: https://github.com/your-org/vllm-eval
+sources:
+  - https://github.com/argoproj/argo-workflows
+
+maintainers:
+  - name: VLLM Eval Team
+    email: vllm-eval@company.com
+
+dependencies:
+  - name: argo-workflows
+    version: "0.41.0"
+    repository: https://argoproj.github.io/argo-helm
+    condition: argo-workflows.enabled
+
+annotations:
+  category: Workflow
+  licenses: Apache-2.0 

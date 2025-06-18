@@ -1,0 +1,325 @@
+{
+    "description": "VLLM Evaluation Configuration for API-based Evalchemy Benchmarks",
+    "version": "2.0",
+    "last_updated": "2024-01-01",
+    "evaluation_mode": "api_based",
+    
+    "benchmarks": {
+      "bbh": {
+        "enabled": false,
+        "description": "BIG-Bench Hard - Challenging reasoning tasks",
+        "tasks": ["bbh"]
+      },
+      "mmlu": {
+        "enabled": false,
+        "description": "Massive Multitask Language Understanding",
+        "tasks": ["mmlu"]
+      },
+      "arc_easy": {
+        "enabled": false,
+        "description": "AI2 Reasoning Challenge (Easy)",
+        "tasks": ["arc_easy"]
+      },
+      "arc_challenge": {
+        "enabled": false,
+        "description": "AI2 Reasoning Challenge (Challenge)",
+        "tasks": ["arc_challenge"]
+      },
+      "truthfulqa": {
+        "enabled": false,
+        "description": "TruthfulQA - Measuring truthfulness in language models",
+        "tasks": ["truthfulqa_mc1", "truthfulqa_mc2"]
+      },
+      "belebele": {
+        "enabled": false,
+        "description": "Belebele - Multilingual reading comprehension",
+        "tasks": ["belebele"]
+      },
+      "xnli": {
+        "enabled": false,
+        "description": "Cross-lingual Natural Language Inference",
+        "tasks": ["xnli"]
+      },
+      "anli": {
+        "enabled": false,
+        "description": "Adversarial Natural Language Inference",
+        "tasks": ["anli"]
+      },
+      "xquad": {
+        "enabled": true,
+        "description": "Cross-lingual Question Answering Dataset - Selected Languages Only",
+        "tasks": ["xquad_en"]
+      },
+      "super_glue": {
+        "enabled": false,
+        "description": "SuperGLUE benchmark suite",
+        "tasks": ["super_glue"]
+      }
+    },
+    
+    "model_configs": {
+      "vllm_api_config": {
+        "model_type": "local-completions",
+        "base_url": "http://vllm:8000/v1/completions",
+        "model_args": "model=qwen3-8b,tokenizer=Qwen/Qwen3-8b,tokenizer_backend=huggingface",
+        "api_config": {
+          "max_retries": 3,
+          "retry_delay": 5.0
+        }
+      }
+    },
+    
+    "evaluation_settings": {
+      "num_fewshot": 3,
+      "batch_size": 1,
+      "limit": 1,
+      "output_format": "json",
+      "log_samples": true,
+      "include_path": true,
+      "desc" : ""
+    },
+    
+    "resource_limits": {
+      "max_concurrent_requests": 10,
+      "request_timeout": 60,
+      "memory_limit": "4Gi",
+      "cpu_limit": "2"
+    },
+    
+    "logging": {
+      "level": "INFO",
+      "format": "json",
+      "output_path": "/app/logs/evalchemy.log"
+    },
+    
+    "tasks": {
+      "bbh": {
+        "enabled": true,
+        "tasks": ["bbh"],
+        "description": "BIG-Bench Hard - Challenging reasoning tasks",
+        "metrics": ["acc", "acc_norm"],
+        "output_path": "results/bbh",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 3600
+      },
+      
+      "mmlu": {
+        "enabled": true,
+        "tasks": ["mmlu"],
+        "description": "Massive Multitask Language Understanding - 57 academic subjects",
+        "metrics": ["acc"],
+        "output_path": "results/mmlu",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 3600
+      },
+      
+      "arc_easy": {
+        "enabled": true,
+        "tasks": ["arc_easy"],
+        "description": "AI2 Reasoning Challenge (Easy) - Grade-school science questions",
+        "metrics": ["acc", "acc_norm"],
+        "output_path": "results/arc_easy",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 1800
+      },
+      
+      "arc_challenge": {
+        "enabled": true,
+        "tasks": ["arc_challenge"],
+        "description": "AI2 Reasoning Challenge (Challenge) - Harder science questions",
+        "metrics": ["acc", "acc_norm"],
+        "output_path": "results/arc_challenge",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 1800
+      },
+      
+      "truthfulqa": {
+        "enabled": true,
+        "tasks": ["truthfulqa_mc1", "truthfulqa_mc2"],
+        "description": "TruthfulQA - Measuring truthfulness in language models",
+        "metrics": ["mc1", "mc2"],
+        "output_path": "results/truthfulqa",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 1800
+      },
+      
+      "belebele": {
+        "enabled": true,
+        "tasks": ["belebele"],
+        "description": "Belebele - Multilingual reading comprehension",
+        "metrics": ["acc"],
+        "output_path": "results/belebele",
+        "log_samples": true,
+        "priority": "medium",
+        "timeout": 1800
+      },
+      
+      "xnli": {
+        "enabled": true,
+        "tasks": ["xnli"],
+        "description": "Cross-lingual Natural Language Inference",
+        "metrics": ["acc"],
+        "output_path": "results/xnli",
+        "log_samples": true,
+        "priority": "medium",
+        "timeout": 1800
+      },
+      
+      "anli": {
+        "enabled": true,
+        "tasks": ["anli"],
+        "description": "Adversarial Natural Language Inference",
+        "metrics": ["acc"],
+        "output_path": "results/anli",
+        "log_samples": true,
+        "priority": "medium",
+        "timeout": 1800
+      },
+      
+      "xquad": {
+        "enabled": true,
+        "tasks": ["xquad_en"],
+        "description": "Cross-lingual Question Answering Dataset - Selected Languages Only",
+        "metrics": ["f1", "exact_match"],
+        "output_path": "results/xquad",
+        "log_samples": true,
+        "priority": "medium",
+        "timeout": 1800
+      },
+      
+      "super_glue": {
+        "enabled": true,
+        "tasks": ["super_glue"],
+        "description": "SuperGLUE benchmark suite",
+        "metrics": ["acc"],
+        "output_path": "results/super_glue",
+        "log_samples": true,
+        "priority": "medium",
+        "timeout": 2400
+      }
+    },
+    
+    "api_configs": {
+      "openai_config": {
+        "model_type": "openai-chat-completions",
+        "default_model": "gpt-4",
+        "api_key_env": "OPENAI_API_KEY",
+        "base_url": "https://api.openai.com/v1",
+        "timeout": 300,
+        "max_retries": 3,
+        "batch_size": 1,
+        "temperature": 0.0,
+        "max_tokens": 2048
+      },
+      
+      "anthropic_config": {
+        "model_type": "anthropic-chat-completions",
+        "default_model": "claude-3-sonnet-20240229",
+        "api_key_env": "ANTHROPIC_API_KEY",
+        "timeout": 300,
+        "max_retries": 3,
+        "batch_size": 1,
+        "temperature": 0.0,
+        "max_tokens": 2048
+      }
+    },
+    
+    "execution_config": {
+      "parallel_execution": false,
+      "max_parallel_tasks": 1,
+      "timeout_per_task": 3600,
+      "retry_failed_tasks": true,
+      "max_retries": 2,
+      "retry_delay": 60,
+      "save_intermediate_results": true,
+      "cleanup_on_failure": false,
+      "verbose": true,
+      "log_level": "INFO",
+      "api_rate_limit": {
+        "requests_per_minute": 60,
+        "tokens_per_minute": 100000,
+        "concurrent_requests": 1
+      }
+    },
+    
+    "output_config": {
+      "base_output_dir": "/tmp/vllm_eval_results",
+      "save_predictions": true,
+      "save_metrics": true,
+      "save_logs": true,
+      "compress_outputs": false,
+      "output_format": "json",
+      "include_metadata": true,
+      "timestamp_outputs": true
+    },
+    
+    "quality_checks": {
+      "min_accuracy_threshold": 0.1,
+      "max_runtime_hours": 2,
+      "check_output_format": true,
+      "validate_metrics": true,
+      "detect_anomalies": true,
+      "anomaly_threshold": 0.5,
+      "api_response_validation": true
+    },
+    
+    "benchmark_groups": {
+      "core_english": {
+        "description": "Core English language benchmarks",
+        "benchmarks": ["arc_easy", "arc_challenge", "hellaswag", "mmlu"],
+        "priority": "high",
+        "required": true
+      },
+      
+      "reasoning": {
+        "description": "Reasoning and problem solving",
+        "benchmarks": ["gsm8k", "winogrande", "piqa"],
+        "priority": "medium",
+        "required": false
+      },
+      
+      "specialized": {
+        "description": "Specialized evaluation tasks",
+        "benchmarks": ["truthfulqa", "humaneval"],
+        "priority": "low",
+        "required": false
+      }
+    },
+    
+    "evaluation_profiles": {
+      "quick": {
+        "description": "Quick evaluation for development",
+        "benchmark_groups": ["core_english"],
+        "limit_per_task": 100,
+        "timeout": 1800
+      },
+      
+      "standard": {
+        "description": "Standard evaluation for releases",
+        "benchmark_groups": ["core_english", "reasoning"],
+        "limit_per_task": null,
+        "timeout": 3600
+      },
+      
+      "comprehensive": {
+        "description": "Comprehensive evaluation for major releases",
+        "benchmark_groups": ["core_english", "reasoning", "specialized"],
+        "limit_per_task": null,
+        "timeout": 7200
+      }
+    },
+    
+    "notification_config": {
+      "enabled": true,
+      "notify_on_start": true,
+      "notify_on_completion": true,
+      "notify_on_failure": true,
+      "include_summary": true,
+      "include_detailed_results": false
+    }
+  }

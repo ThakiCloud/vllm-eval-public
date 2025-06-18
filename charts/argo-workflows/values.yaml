@@ -1,0 +1,352 @@
+# Argo Workflows Configuration for VLLM Evaluation
+argo-workflows:
+  enabled: true
+  
+  # Workflow Controller Configuration
+  controller:
+    image:
+      registry: quay.io
+      repository: argoproj/workflow-controller
+      tag: "v3.5.2"
+    
+    # High Availability Setup
+    replicas: 2
+    
+    # Resource Configuration
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    
+    # Workflow Configuration
+    workflowDefaults:
+      spec:
+        # Default timeout for workflows
+        activeDeadlineSeconds: 7200  # 2 hours
+        ttlStrategy:
+          secondsAfterCompletion: 86400  # 24 hours
+          secondsAfterSuccess: 86400
+          secondsAfterFailure: 172800  # 48 hours
+    
+    # Persistence Configuration
+    persistence:
+      connectionPool:
+        maxIdleConns: 100
+        maxOpenConns: 0
+      
+    # Security Context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      fsGroup: 8737
+    
+    # Node Selector for Controller
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    
+    # Tolerations
+    tolerations: []
+    
+    # Affinity Rules
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - workflow-controller
+            topologyKey: kubernetes.io/hostname
+
+  # Argo Server Configuration
+  server:
+    enabled: true
+    
+    image:
+      registry: quay.io
+      repository: argoproj/argocli
+      tag: "v3.5.2"
+    
+    # Resource Configuration
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    
+    # Service Configuration
+    service:
+      type: ClusterIP
+      port: 2746
+    
+    # Ingress Configuration
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      hosts:
+        - host: argo-workflows.company.com
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: argo-workflows-tls
+          hosts:
+            - argo-workflows.company.com
+    
+    # Security Context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      fsGroup: 8737
+    
+    # Authentication
+    auth:
+      mode: server
+    
+    # RBAC
+    rbac:
+      create: true
+
+  # Executor Configuration
+  executor:
+    image:
+      registry: quay.io
+      repository: argoproj/argoexec
+      tag: "v3.5.2"
+    
+    # Resource Configuration
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+# VLLM Evaluation Specific Configuration
+vllmEvaluation:
+  # Default Container Images
+  images:
+    deepeval:
+      repository: ghcr.io/your-org/vllm-eval/deepeval
+      tag: "latest"
+      pullPolicy: Always
+    
+    evalchemy:
+      repository: ghcr.io/your-org/vllm-eval/evalchemy
+      tag: "latest"
+      pullPolicy: Always
+    
+    workflowTools:
+      repository: ghcr.io/your-org/vllm-eval/workflow-tools
+      tag: "latest"
+      pullPolicy: Always
+  
+  # Storage Configuration
+  storage:
+    # MinIO Configuration
+    minio:
+      endpoint: "minio.storage.svc.cluster.local:9000"
+      bucket: "llm-eval-ds"
+      accessKey: "minio-access-key"
+      secretKey: "minio-secret-key"
+      secure: false
+    
+    # Persistent Volume Claims
+    pvc:
+      # Shared storage for datasets
+      datasets:
+        storageClass: "fast-ssd"
+        size: "100Gi"
+        accessMode: "ReadWriteMany"
+      
+      # Temporary storage for logs
+      logs:
+        storageClass: "standard"
+        size: "50Gi"
+        accessMode: "ReadWriteOnce"
+  
+  # Database Configuration
+  database:
+    clickhouse:
+      host: "clickhouse.database.svc.cluster.local"
+      port: 9000
+      database: "vllm_eval"
+      username: "default"
+      password: "clickhouse-password"
+  
+  # Notification Configuration
+  notifications:
+    teams:
+      webhookUrl: "https://company.webhook.office.com/webhookb2/..."
+      enabled: true
+    
+    slack:
+      webhookUrl: ""
+      enabled: false
+  
+  # Resource Limits
+  resources:
+    # CPU-based evaluation (Deepeval)
+    deepeval:
+      requests:
+        cpu: "2"
+        memory: "4Gi"
+      limits:
+        cpu: "4"
+        memory: "8Gi"
+    
+    # GPU-based evaluation (Evalchemy)
+    evalchemy:
+      requests:
+        cpu: "4"
+        memory: "8Gi"
+        nvidia.com/gpu: "1"
+      limits:
+        cpu: "8"
+        memory: "16Gi"
+        nvidia.com/gpu: "1"
+    
+    # Utility containers
+    tools:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+  
+  # Node Selectors
+  nodeSelector:
+    # CPU nodes for general workloads
+    cpu:
+      kubernetes.io/arch: amd64
+      node-type: cpu
+    
+    # GPU nodes for ML workloads
+    gpu:
+      kubernetes.io/arch: amd64
+      node-type: gpu
+      accelerator: nvidia-tesla-v100
+  
+  # Tolerations for GPU nodes
+  tolerations:
+    gpu:
+      - key: nvidia.com/gpu
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+  
+  # Priority Classes
+  priorityClass:
+    high: "high-priority"
+    normal: "normal-priority"
+    low: "low-priority"
+  
+  # Timeouts (in seconds)
+  timeouts:
+    datasetPreparation: 1800    # 30 minutes
+    deepevalExecution: 3600     # 1 hour
+    evalchemyExecution: 3600    # 1 hour
+    aggregation: 600            # 10 minutes
+    overall: 7200               # 2 hours
+  
+  # Retry Configuration
+  retry:
+    limit: 3
+    retryPolicy: "Always"
+    backoff:
+      duration: "1m"
+      factor: 2
+      maxDuration: "10m"
+
+# Service Account Configuration
+serviceAccount:
+  create: true
+  name: "vllm-eval-workflow"
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT:role/VLLMEvalWorkflowRole"
+
+# RBAC Configuration
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "pods/log", "configmaps", "secrets"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "replicasets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["batch"]
+      resources: ["jobs"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["argoproj.io"]
+      resources: ["workflows", "workflowtemplates", "cronworkflows"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  
+  # Prometheus ServiceMonitor
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    labels:
+      app: argo-workflows
+    interval: 30s
+    scrapeTimeout: 10s
+  
+  # Grafana Dashboard
+  grafanaDashboard:
+    enabled: true
+    namespace: monitoring
+    labels:
+      grafana_dashboard: "1"
+
+# Security Configuration
+security:
+  # Pod Security Standards
+  podSecurityStandards:
+    enforce: "restricted"
+    audit: "restricted"
+    warn: "restricted"
+  
+  # Network Policies
+  networkPolicy:
+    enabled: true
+    ingress:
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              name: argo-events
+        ports:
+        - protocol: TCP
+          port: 2746
+    egress:
+      - to:
+        - namespaceSelector:
+            matchLabels:
+              name: storage
+        ports:
+        - protocol: TCP
+          port: 9000
+      - to:
+        - namespaceSelector:
+            matchLabels:
+              name: database
+        ports:
+        - protocol: TCP
+          port: 9000 

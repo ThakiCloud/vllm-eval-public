@@ -1,0 +1,437 @@
+# ClickHouse Configuration for VLLM Evaluation Metrics
+clickhouse:
+  enabled: true
+  
+  # Image Configuration
+  image:
+    registry: docker.io
+    repository: bitnami/clickhouse
+    tag: "23.8.2-debian-11-r0"
+    pullPolicy: IfNotPresent
+  
+  # Authentication
+  auth:
+    username: "default"
+    password: "clickhouse-password"
+    existingSecret: ""
+    existingSecretKey: ""
+  
+  # ClickHouse Configuration
+  configuration: |
+    <clickhouse>
+      <logger>
+        <level>information</level>
+        <console>true</console>
+        <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+        <size>1000M</size>
+        <count>10</count>
+      </logger>
+      
+      <http_port>8123</http_port>
+      <tcp_port>9000</tcp_port>
+      <mysql_port>9004</mysql_port>
+      <postgresql_port>9005</postgresql_port>
+      
+      <listen_host>::</listen_host>
+      
+      <max_connections>4096</max_connections>
+      <keep_alive_timeout>3</keep_alive_timeout>
+      <max_concurrent_queries>100</max_concurrent_queries>
+      <uncompressed_cache_size>8589934592</uncompressed_cache_size>
+      <mark_cache_size>5368709120</mark_cache_size>
+      
+      <path>/bitnami/clickhouse/</path>
+      <tmp_path>/bitnami/clickhouse/tmp/</tmp_path>
+      <user_files_path>/bitnami/clickhouse/user_files/</user_files_path>
+      <format_schema_path>/bitnami/clickhouse/format_schemas/</format_schema_path>
+      
+      <users_config>users.xml</users_config>
+      
+      <default_profile>default</default_profile>
+      <default_database>default</default_database>
+      
+      <timezone>UTC</timezone>
+      
+      <mlock_executable>false</mlock_executable>
+      
+      <remote_servers>
+        <vllm_eval_cluster>
+          <shard>
+            <replica>
+              <host>clickhouse-0.clickhouse-headless.database.svc.cluster.local</host>
+              <port>9000</port>
+            </replica>
+          </shard>
+        </vllm_eval_cluster>
+      </remote_servers>
+      
+      <zookeeper incl="zookeeper-servers" optional="true" />
+      
+      <macros incl="macros" optional="true" />
+      
+      <builtin_dictionaries_reload_interval>3600</builtin_dictionaries_reload_interval>
+      
+      <max_session_timeout>3600</max_session_timeout>
+      <default_session_timeout>60</default_session_timeout>
+      
+      <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+      </query_log>
+      
+      <trace_log>
+        <database>system</database>
+        <table>trace_log</table>
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+      </trace_log>
+      
+      <query_thread_log>
+        <database>system</database>
+        <table>query_thread_log</table>
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+      </query_thread_log>
+    </clickhouse>
+  
+  # Users Configuration
+  users: |
+    <users>
+      <default>
+        <password_sha256_hex>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</password_sha256_hex>
+        <networks incl="networks" replace="replace">
+          <ip>::/0</ip>
+        </networks>
+        <profile>default</profile>
+        <quota>default</quota>
+      </default>
+      
+      <vllm_eval>
+        <password_sha256_hex>ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad</password_sha256_hex>
+        <networks>
+          <ip>::/0</ip>
+        </networks>
+        <profile>vllm_eval_profile</profile>
+        <quota>default</quota>
+        <databases>
+          <database>vllm_eval</database>
+        </databases>
+      </vllm_eval>
+    </users>
+    
+    <profiles>
+      <default>
+        <max_memory_usage>10000000000</max_memory_usage>
+        <use_uncompressed_cache>0</use_uncompressed_cache>
+        <load_balancing>random</load_balancing>
+      </default>
+      
+      <vllm_eval_profile>
+        <max_memory_usage>20000000000</max_memory_usage>
+        <max_bytes_before_external_group_by>20000000000</max_bytes_before_external_group_by>
+        <max_bytes_before_external_sort>20000000000</max_bytes_before_external_sort>
+        <use_uncompressed_cache>1</use_uncompressed_cache>
+        <load_balancing>random</load_balancing>
+        <max_execution_time>300</max_execution_time>
+        <max_query_size>1048576</max_query_size>
+        <max_ast_depth>1000</max_ast_depth>
+        <max_ast_elements>50000</max_ast_elements>
+      </vllm_eval_profile>
+    </profiles>
+    
+    <quotas>
+      <default>
+        <interval>
+          <duration>3600</duration>
+          <queries>0</queries>
+          <errors>0</errors>
+          <result_rows>0</result_rows>
+          <read_rows>0</read_rows>
+          <execution_time>0</execution_time>
+        </interval>
+      </default>
+    </quotas>
+  
+  # Resource Configuration
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+  
+  # Persistence Configuration
+  persistence:
+    enabled: true
+    storageClass: "fast-ssd"
+    size: "100Gi"
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service Configuration
+  service:
+    type: ClusterIP
+    ports:
+      http: 8123
+      tcp: 9000
+      mysql: 9004
+      postgresql: 9005
+  
+  # Security Context
+  securityContext:
+    enabled: true
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsNonRoot: true
+  
+  # Node Selector
+  nodeSelector:
+    kubernetes.io/arch: amd64
+    node-type: database
+  
+  # Tolerations
+  tolerations: []
+  
+  # Affinity
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - clickhouse
+          topologyKey: kubernetes.io/hostname
+  
+  # Liveness and Readiness Probes
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+    successThreshold: 1
+  
+  # Metrics Configuration
+  metrics:
+    enabled: true
+    
+    # Prometheus Exporter
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+      labels:
+        app: clickhouse
+      interval: 30s
+      scrapeTimeout: 10s
+    
+    # Custom Metrics
+    customMetrics:
+      - name: vllm_eval_query_duration
+        query: "SELECT avg(query_duration_ms) FROM system.query_log WHERE event_date = today() AND query LIKE '%vllm_eval%'"
+        interval: 60
+      
+      - name: vllm_eval_rows_processed
+        query: "SELECT sum(read_rows) FROM system.query_log WHERE event_date = today() AND query LIKE '%vllm_eval%'"
+        interval: 300
+
+# VLLM Evaluation Database Schema
+vllmEvalSchema:
+  # Database Creation
+  databases:
+    - name: vllm_eval
+      engine: Atomic
+  
+  # Table Definitions
+  tables:
+    # Main results table
+    - name: vllm_eval.results
+      engine: MergeTree
+      orderBy: ["timestamp", "run_id", "model_tag"]
+      partitionBy: "toYYYYMM(timestamp)"
+      ttl: "timestamp + INTERVAL 1 YEAR"
+      schema: |
+        CREATE TABLE IF NOT EXISTS vllm_eval.results (
+          run_id String,
+          model_tag String,
+          timestamp DateTime64(3),
+          metric_name String,
+          metric_value Float64,
+          metric_category Enum8('deepeval' = 1, 'evalchemy' = 2, 'aggregate' = 3),
+          dataset_name String,
+          dataset_version String,
+          evaluation_time_seconds UInt32,
+          metadata Map(String, String)
+        ) ENGINE = MergeTree()
+        PARTITION BY toYYYYMM(timestamp)
+        ORDER BY (timestamp, run_id, model_tag, metric_name)
+        TTL timestamp + INTERVAL 1 YEAR
+        SETTINGS index_granularity = 8192;
+    
+    # Detailed evaluation logs
+    - name: vllm_eval.evaluation_logs
+      engine: MergeTree
+      orderBy: ["timestamp", "run_id"]
+      partitionBy: "toYYYYMM(timestamp)"
+      ttl: "timestamp + INTERVAL 3 MONTH"
+      schema: |
+        CREATE TABLE IF NOT EXISTS vllm_eval.evaluation_logs (
+          run_id String,
+          timestamp DateTime64(3),
+          log_level Enum8('DEBUG' = 1, 'INFO' = 2, 'WARNING' = 3, 'ERROR' = 4),
+          component String,
+          message String,
+          metadata Map(String, String)
+        ) ENGINE = MergeTree()
+        PARTITION BY toYYYYMM(timestamp)
+        ORDER BY (timestamp, run_id)
+        TTL timestamp + INTERVAL 3 MONTH
+        SETTINGS index_granularity = 8192;
+    
+    # Model performance summary
+    - name: vllm_eval.model_performance_summary
+      engine: AggregatingMergeTree
+      orderBy: ["model_tag", "metric_name", "date"]
+      partitionBy: "toYYYYMM(date)"
+      schema: |
+        CREATE TABLE IF NOT EXISTS vllm_eval.model_performance_summary (
+          model_tag String,
+          metric_name String,
+          date Date,
+          avg_score AggregateFunction(avg, Float64),
+          min_score AggregateFunction(min, Float64),
+          max_score AggregateFunction(max, Float64),
+          count_evaluations AggregateFunction(count, UInt64)
+        ) ENGINE = AggregatingMergeTree()
+        PARTITION BY toYYYYMM(date)
+        ORDER BY (model_tag, metric_name, date)
+        SETTINGS index_granularity = 8192;
+  
+  # Materialized Views
+  materializedViews:
+    - name: vllm_eval.model_performance_summary_mv
+      target: vllm_eval.model_performance_summary
+      query: |
+        CREATE MATERIALIZED VIEW IF NOT EXISTS vllm_eval.model_performance_summary_mv
+        TO vllm_eval.model_performance_summary
+        AS SELECT
+          model_tag,
+          metric_name,
+          toDate(timestamp) as date,
+          avgState(metric_value) as avg_score,
+          minState(metric_value) as min_score,
+          maxState(metric_value) as max_score,
+          countState() as count_evaluations
+        FROM vllm_eval.results
+        GROUP BY model_tag, metric_name, date;
+
+# Backup Configuration
+backup:
+  enabled: true
+  
+  # S3 Configuration
+  s3:
+    endpoint: "s3.amazonaws.com"
+    bucket: "vllm-eval-backups"
+    region: "us-west-2"
+    accessKey: "backup-access-key"
+    secretKey: "backup-secret-key"
+  
+  # Backup Schedule
+  schedule:
+    # Full backup daily at 2 AM
+    full: "0 2 * * *"
+    # Incremental backup every 6 hours
+    incremental: "0 */6 * * *"
+  
+  # Retention Policy
+  retention:
+    daily: 7
+    weekly: 4
+    monthly: 12
+
+# Monitoring and Alerting
+monitoring:
+  enabled: true
+  
+  # Grafana Dashboard
+  grafanaDashboard:
+    enabled: true
+    namespace: monitoring
+    configMapName: clickhouse-dashboard
+  
+  # Alert Rules
+  alertRules:
+    - name: ClickHouseDown
+      expr: up{job="clickhouse"} == 0
+      for: 1m
+      severity: critical
+      summary: "ClickHouse instance is down"
+    
+    - name: ClickHouseHighMemoryUsage
+      expr: (clickhouse_memory_usage / clickhouse_memory_limit) > 0.9
+      for: 5m
+      severity: warning
+      summary: "ClickHouse memory usage is above 90%"
+    
+    - name: ClickHouseSlowQueries
+      expr: rate(clickhouse_query_duration_seconds_sum[5m]) / rate(clickhouse_query_duration_seconds_count[5m]) > 10
+      for: 5m
+      severity: warning
+      summary: "ClickHouse queries are running slowly"
+
+# Security Configuration
+security:
+  # Network Policy
+  networkPolicy:
+    enabled: true
+    ingress:
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              name: vllm-eval
+        ports:
+        - protocol: TCP
+          port: 9000
+        - protocol: TCP
+          port: 8123
+    egress:
+      - to: []
+        ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
+  
+  # Pod Security Context
+  podSecurityContext:
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  
+  # Container Security Context
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1001 

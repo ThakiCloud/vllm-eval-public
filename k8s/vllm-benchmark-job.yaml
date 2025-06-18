@@ -1,0 +1,69 @@
+# Job for running VLLM evaluation
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vllm-benchmark
+  labels:
+    app: vllm-eval
+spec:
+  # 완료 후 정리 (2분)
+  ttlSecondsAfterFinished: 120
+  
+  template:
+    metadata:
+      labels:
+        app: vllm-eval
+    spec:
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 1000
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+        - name: vllm-benchmark
+          image: your-images:latest
+          imagePullPolicy: Always
+          
+          # 환경 변수 (Dockerfile 참조)
+          env:
+            - name: VLLM_ENDPOINT
+              value: "http://vllm:8000" # K8s 서비스 이름 사용
+            - name: MODEL_NAME
+              value: "Qwen/Qwen3-8B"
+            - name: SERVED_MODEL_NAME
+              value: "qwen3-8b"
+            - name: RANDOM_INPUT_LEN
+              value: "512"
+            - name: MAX_CONCURRENCY
+              value: "1"
+            # 필요에 따라 다른 환경 변수 추가 가능 (e.g., REQUEST_RATE, NUM_PROMPTS)
+          
+          # 실행 인수는 Dockerfile의 Entrypoint 스크립트가 환경변수를 사용하므로 제거합니다.
+          
+          # 결과 저장용 볼륨
+          volumeMounts:
+            - name: model-results-storage
+              mountPath: /results
+            - name: parsed-results-storage
+              mountPath: /parsed
+      
+      volumes:
+        # 호스트 경로 사용 (개발/테스트용)
+        # - name: model-results-storage
+        #   hostPath:
+        #     path: /Users/pyj/Documents/vllm-eval-results
+        #     type: DirectoryOrCreate
+        
+        # PersistentVolumeClaim 사용 (필요시 주석 해제)
+        - name: model-results-storage
+          persistentVolumeClaim:
+            claimName: model-results-pvc
+        - name: parsed-results-storage
+          persistentVolumeClaim:
+            claimName: parsed-results-pvc
+        
+        # NFS 사용:
+        # - name: results
+        #   nfs:
+        #     server: your-nfs-server.example.com
+        #     path: /exports/vllm-eval-results 

@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Architecture
+
+## 시스템 아키텍처 개요
+VLLM 평가 시스템은 Event-Driven Architecture를 기반으로 한 4-Layer 구조로 설계되었습니다.
+
+## Layer 구성
+
+### 1. Trigger Layer (이벤트 수신)
+- **Event Source**: GHCR Repository Package Push Webhook
+- **Mechanism**: Argo Events Sensor → Argo Workflow Trigger
+- **조건**: `tag =~ /release-.+/` 패턴 매칭
+
+### 2. Execution Layer (워크플로 실행)
+**4-Step DAG 구조**:
+1. `prepare-dataset` - 데이터셋 준비 및 중복 제거
+2. `deepeval-runner` - CPU 기반 평가 실행
+3. `evalchemy-runner` - GPU 기반 벤치마크 실행  
+4. `aggregate-metrics` - 결과 집계 및 저장
+
+### 3. Storage Layer (데이터 저장)
+- **Dataset & Snapshot**: MinIO (bucket: `llm-eval-ds`)
+- **Raw Logs**: PVC (7일 보존)
+- **Aggregated Metrics**: ClickHouse `vllm_eval.results` 테이블
+
+### 4. Observability Layer (모니터링 및 알림)
+- **메트릭**: Prometheus Exporter (파이프라인 Job 상태)
+- **시각화**: Grafana 대시보드 `LLM Quality Overview`
+- **알림**: Microsoft Teams Adaptive Card
+
+## 핵심 설계 원칙
+
+### Scalability (확장성)
+- **병렬 처리**: Benchmark Matrix Fan-out
+- **리소스 격리**: GPU Pod PriorityClass = high
+- **Auto-scaling**: HPA 기반 동적 스케일링
+
+### Reliability (안정성)  
+- **HA 구성**: Argo Workflow Controller 2 Replicas
+- **Timeout 관리**: Benchmark Job ≤ 60분
+- **재시도 정책**: 실패 시 지수 백오프
+
+### Security (보안)
+- **최소 권한**: ServiceAccount RBAC 최소화
+- **Secret 관리**: External Secret Operator 연동
+- **감사 추적**: 모든 RUN_ID별 JSONL 로그 S3 보존
+
+## 데이터 플로우
+```
+GHCR Push → Argo Events → Workflow Trigger → 
+Dataset Prep → Deepeval (CPU) → Evalchemy (GPU) → 
+Aggregate → ClickHouse + Teams Notification
+```
+
+## 컨테이너 전략
+- **Base Images**: 최소 런타임 이미지 사용
+- **Multi-stage Build**: 빌드 최적화
+- **Security Scanning**: Trivy 기반 취약점 검사

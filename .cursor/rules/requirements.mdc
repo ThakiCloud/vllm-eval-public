@@ -1,0 +1,90 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Requirements
+
+## 기능 요구사항 (Functional Requirements)
+
+### F-01: 릴리스 훅 자동화
+- **조건**: `ghcr.io/{repo}/*` 이미지 Push & `tag =~ /release-.+/`
+- **동작**: 파이프라인 자동 실행
+- **검증**: Webhook 수신 후 5분 이내 워크플로 시작
+
+### F-02: 데이터셋 버전 관리
+- **방식**: `dataset.yaml` SHA-256 기반 불변 버전 체계
+- **중복 제거**: MinHash-LSH + Levenshtein < 0.2 필터
+- **저장소**: MinIO bucket `llm-eval-ds`
+
+### F-03: Deepeval 커스텀 메트릭
+- **위치**: `metrics/*.py` 레지스트리
+- **지원 메트릭**: RAG 정답률, Hallucination Detection, Context Relevance
+- **확장성**: 플러그인 아키텍처로 새 메트릭 추가 가능
+
+### F-04: Evalchemy 벤치마크
+- **설정**: `eval_config.json` enable flag 기반
+- **지원 벤치마크**: ARC, HellaSwag, MMLU, Ko-MMLU, Ko-ARC
+- **실행 모드**: GPU 기반 병렬 처리
+
+### F-05: 결과 스키마 표준화
+```sql
+CREATE TABLE vllm_eval.results (
+    run_id String,
+    model_tag String,
+    metric String,
+    value Float64,
+    timestamp DateTime64
+);
+```
+
+### F-06: Regression Alert 시스템
+- **기준**: 최근 N회 Rolling Mean 대비 10% 하락
+- **알림**: Microsoft Teams Mentions (@LLM-Ops)
+- **카드 형식**: Adaptive Card with 상세 메트릭 비교
+
+## 비기능 요구사항 (Non-Functional)
+
+### 보안 (Security)
+- **RBAC**: ServiceAccount 최소 권한 원칙
+- **Secret 관리**: External Secret Operator 연동
+- **컨테이너 보안**: 
+  - Non-root 사용자 실행
+  - 취약점 스캔 (Trivy)
+  - 이미지 서명 검증
+
+### 성능 (Performance)
+- **Timeout**: Benchmark Job ≤ 60분
+- **리소스**: GPU Pod PriorityClass = high
+- **처리량**: 동시 최대 5개 벤치마크 실행
+- **응답 시간**: 릴리스-to-리포트 ≤ 2시간
+
+### 확장성 (Scalability)
+- **수평 확장**: Benchmark Matrix 병렬 Fan-out
+- **수직 확장**: GPU 노드 Auto-scaling
+- **저장 확장**: ClickHouse 샤딩 지원
+
+### 가용성 (Availability)
+- **HA 구성**: Argo Workflow Controller 2 Replicas
+- **장애 복구**: 자동 재시도 (지수 백오프)
+- **모니터링**: Prometheus + Grafana SLA 대시보드
+- **목표**: 99.5% Uptime
+
+### 감사성 (Auditability)
+- **로그 보존**: 모든 RUN_ID별 JSONL 로그 S3 ≥ 90일
+- **추적성**: 각 평가 실행의 완전한 Audit Trail
+- **규정 준수**: 데이터 익명화 및 개인정보 보호
+
+## 운영 요구사항
+
+### 백업 및 복구
+- **ClickHouse**: 일일 백업 + Point-in-time Recovery
+- **MinIO**: Cross-region 복제
+- **설정**: GitOps 기반 형상 관리
+
+### 모니터링 및 알림
+- **SLI/SLO**: 성공률, 지연시간, 처리량 추적
+- **Alert Rules**: 
+  - 파이프라인 실패율 > 5%
+  - 평가 지연 > 2시간
+  - 리소스 사용률 > 80%

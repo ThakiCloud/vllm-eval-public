@@ -1,0 +1,62 @@
+# VLLM 성능 벤치마크 설정
+vllm_benchmark:
+  name: "VLLM Performance Benchmark"
+  version: "2.0.0"
+  description: "VLLM 서빙 성능 측정 벤치마크"
+  
+  # 기본 설정
+  defaults:
+    endpoint: "http://host.docker.internal:8000"
+    backend: "openai-chat"
+    endpoint_path: "/v1/chat/completions"
+    dataset_type: "random"
+    percentile_metrics: "ttft,tpot,itl,e2el"
+    metric_percentiles: "25,50,75,90,95,99"
+  
+  # 벤치마크 시나리오들
+  scenarios:
+    # 기본 성능 테스트
+    - name: "basic_performance"
+      description: "기본 성능 측정"
+      model: "Qwen/Qwen3-8B"
+      served_model_name: "qwen3-8b"
+      max_concurrency: 1
+      random_input_len: 1024
+      random_output_len: 1024
+      
+    # 동시성 테스트
+    - name: "concurrency_test"
+      description: "동시 요청 처리 성능"
+      model: "Qwen/Qwen3-8B"
+      served_model_name: "qwen3-8b"
+      max_concurrency: 1
+      random_input_len: 1024
+      random_output_len: 1024
+      num_prompts: 1
+      
+    # 긴 컨텍스트 테스트
+    # - name: "long_context"
+    #   description: "긴 컨텍스트 처리 성능"
+    #   model: "Qwen/Qwen3-8B"
+    #   served_model_name: "qwen3-8b"
+    #   max_concurrency: 2
+    #   random_input_len: 4096
+    #   random_output_len: 512
+    #   num_prompts: 50
+      
+    # 스트레스 테스트
+    # - name: "stress_test"
+    #   description: "고부하 스트레스 테스트"
+    #   model: "Qwen/Qwen3-8B"
+    #   served_model_name: "qwen3-8b"
+    #   max_concurrency: 20
+    #   random_input_len: 2048
+    #   random_output_len: 1024
+    #   num_prompts: 500
+
+  # 성능 임계값 (알림 기준)
+  thresholds:
+    ttft_p95_ms: 200      # TTFT 95% < 200ms
+    tpot_mean_ms: 50      # TPOT 평균 < 50ms
+    throughput_min: 10    # 최소 처리량 > 10 tok/s
+    success_rate: 0.95    # 성공률 > 95% 

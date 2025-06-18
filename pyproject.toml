@@ -1,0 +1,336 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vllm-eval"
+version = "0.1.0"
+description = "VLLM Model Performance Automatic Evaluation System"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "VLLM Eval Team", email = "vllm-eval@company.com"}
+]
+maintainers = [
+    {name = "VLLM Eval Team", email = "vllm-eval@company.com"}
+]
+keywords = ["vllm", "evaluation", "llm", "benchmarking", "deepeval", "evalchemy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "deepeval[all]>=0.20.0",
+    "lm-eval[all]>=0.4.0",
+    "vllm>=0.2.0",
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "datasets>=2.14.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.3.0",
+    "nltk>=3.8.0",
+    "datasketch>=1.6.0",
+    "clickhouse-driver>=0.2.6",
+    "minio>=7.1.0",
+    "pyyaml>=6.0.0",
+    "jsonschema>=4.17.0",
+    "requests>=2.31.0",
+    "aiohttp>=3.8.0",
+    "tenacity>=8.2.0",
+    "rich>=13.0.0",
+    "typer>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.1.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.0",
+    "pre-commit>=3.4.0",
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+]
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.0",
+    "pytest-mock>=3.11.0",
+    "pytest-asyncio>=0.21.0",
+    "factory-boy>=3.3.0",
+    "faker>=19.0.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+    "mkdocs-mermaid2-plugin>=1.1.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.0",
+    "mkdocstrings[python]>=0.24.0",
+    "mkdocs-minify-plugin>=0.7.0",
+]
+monitoring = [
+    "prometheus-client>=0.17.0",
+    "grafana-api>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/vllm-eval"
+Documentation = "https://vllm-eval.readthedocs.io/"
+Repository = "https://github.com/your-org/vllm-eval.git"
+Issues = "https://github.com/your-org/vllm-eval/issues"
+Changelog = "https://github.com/your-org/vllm-eval/blob/main/CHANGELOG.md"
+
+[project.scripts]
+vllm-eval = "vllm_eval.cli:main"
+dedup-datasets = "scripts.dedup_datasets:main"
+aggregate-metrics = "scripts.aggregate_metrics:main"
+validate-schemas = "scripts.validate_schemas:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["eval*", "scripts*"]
+exclude = ["tests*", "docs*", "charts*", "infra*"]
+
+[tool.setuptools.package-data]
+"eval.deepeval_tests" = ["*.yaml", "*.json"]
+"eval.evalchemy" = ["*.json", "*.yaml"]
+"scripts" = ["*.py"]
+
+# Ruff Configuration
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "PTH", # flake8-use-pathlib
+    "ERA", # eradicate
+    "PL",  # pylint
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long, handled by black
+    "B008",   # do not perform function calls in argument defaults
+    "C901",   # too complex
+    "PLR0913", # too many arguments
+    "PLR0912", # too many branches
+    "PLR0915", # too many statements
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/*.py" = ["ARG", "PLR2004", "S101", "TID252"]
+"eval/deepeval_tests/**/*.py" = ["ARG002", "PLR2004"]
+"scripts/**/*.py" = ["PLR2004", "PTH123", "PTH110", "PTH104", "PTH103", "PTH120"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["eval", "scripts"]
+force-sort-within-sections = true
+split-on-trailing-comma = true
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+
+# Black Configuration
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# isort Configuration
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+known_first_party = ["eval", "scripts"]
+known_third_party = ["deepeval", "lm_eval", "vllm", "torch", "transformers"]
+
+# MyPy Configuration
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "deepeval.*",
+    "lm_eval.*",
+    "vllm.*",
+    "datasketch.*",
+    "clickhouse_driver.*",
+    "minio.*",
+]
+ignore_missing_imports = true
+
+# Pytest Configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=eval",
+    "--cov=scripts",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "gpu: marks tests that require GPU",
+    "network: marks tests that require network access",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# Coverage Configuration
+[tool.coverage.run]
+source = ["eval", "scripts"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__init__.py",
+    "*/conftest.py",
+    "setup.py",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# Bandit Configuration
+[tool.bandit]
+exclude_dirs = ["tests", "docs", "charts", "infra"]
+skips = ["B101", "B601"]  # Skip assert_used and shell_injection_process
+
+# Pre-commit Configuration
+[[tool.pre-commit.repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v4.5.0"
+hooks = [
+    {id = "trailing-whitespace"},
+    {id = "end-of-file-fixer"},
+    {id = "check-yaml"},
+    {id = "check-added-large-files"},
+    {id = "check-merge-conflict"},
+    {id = "debug-statements"},
+]
+
+[[tool.pre-commit.repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.1.6"
+hooks = [
+    {id = "ruff", args = ["--fix"]},
+    {id = "ruff-format"},
+]
+
+[[tool.pre-commit.repos]]
+repo = "https://github.com/pre-commit/mirrors-mypy"
+rev = "v1.7.1"
+hooks = [
+    {id = "mypy", additional_dependencies = ["types-all"]},
+] 

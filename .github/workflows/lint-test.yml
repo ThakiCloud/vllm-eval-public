@@ -1,0 +1,406 @@
+name: 🔍 Lint and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 매일 오전 9시 (UTC) 실행
+    - cron: '0 9 * * *'
+
+# SARIF 업로드를 위한 권한 설정
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  lint:
+    name: 🎨 Code Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy black isort
+          pip install -r requirements-dev.txt || echo "requirements-dev.txt not found, skipping"
+
+      - name: 🔍 Run Ruff Linter
+        run: |
+          echo "::group::Ruff Check"
+          ruff check . --output-format=github
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: 🎨 Check Code Formatting (Ruff)
+        run: |
+          echo "::group::Ruff Format Check"
+          ruff format --check . || echo "⚠️ Code formatting issues found (non-blocking)"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: 📋 Type Checking (MyPy)
+        run: |
+          echo "::group::MyPy Type Check"
+          mypy eval/ scripts/ --ignore-missing-imports --show-error-codes
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: 📊 Generate Lint Report
+        if: always()
+        run: |
+          echo "## 🔍 Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "### Ruff Check" >> $GITHUB_STEP_SUMMARY
+          ruff check . --statistics >> $GITHUB_STEP_SUMMARY || echo "Ruff check had issues" >> $GITHUB_STEP_SUMMARY
+          echo "### Format Check" >> $GITHUB_STEP_SUMMARY
+          if ruff format --check .; then
+            echo "Code formatting: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Code formatting: ⚠️ Issues found (informational)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  test:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-xdist pytest-mock
+          pip install deepeval[all] lm-eval[all] || echo "Optional dependencies failed"
+          pip install -r requirements-test.txt || echo "requirements-test.txt not found"
+
+      - name: 🧪 Run Unit Tests
+        run: |
+          pytest tests/ -v \
+            --cov=eval \
+            --cov=scripts \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --junit-xml=pytest-results.xml \
+            -n auto
+        continue-on-error: true
+
+      - name: 📊 Upload Coverage to Codecov
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: 📋 Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            pytest-results.xml
+            htmlcov/
+            coverage.xml
+
+  schema-validation:
+    name: 📋 Schema Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: |
+          pip install jsonschema pyyaml
+
+      - name: 📋 Validate Dataset Manifests
+        run: |
+          echo "::group::Dataset Schema Validation"
+          python scripts/validate_schemas.py datasets/ || echo "⚠️ Schema validation issues (non-blocking)"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: 📋 Validate Config Files
+        run: |
+          echo "::group::Config Validation"
+          python -c "
+          import yaml, json, os
+          
+          # Validate YAML files
+          for root, dirs, files in os.walk('.'):
+              for file in files:
+                  if file.endswith('.yaml') or file.endswith('.yml'):
+                      filepath = os.path.join(root, file)
+                      try:
+                          with open(filepath, 'r') as f:
+                              yaml.safe_load(f)
+                          print(f'✅ {filepath}')
+                      except Exception as e:
+                          print(f'❌ {filepath}: {e}')
+                          
+          # Validate JSON files
+          for root, dirs, files in os.walk('.'):
+              for file in files:
+                  if file.endswith('.json'):
+                      filepath = os.path.join(root, file)
+                      try:
+                          with open(filepath, 'r') as f:
+                              json.load(f)
+                          print(f'✅ {filepath}')
+                      except Exception as e:
+                          print(f'❌ {filepath}: {e}')
+          "
+          echo "::endgroup::"
+        continue-on-error: true
+
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔒 Run Bandit Security Scan
+        uses: tj-actions/bandit@v5.1
+        with:
+          options: "-r -f json -o bandit-report.json --skip B101,B603,B607"
+          targets: "."
+        continue-on-error: true
+          
+      - name: 🔍 Run Safety Check
+        run: |
+          pip install safety
+          safety check --json --output safety-report.json || true
+
+      - name: 📋 Upload Security Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  docker-lint:
+    name: 🐳 Docker Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Lint Deepeval Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        continue-on-error: true
+        with:
+          dockerfile: docker/deepeval.Dockerfile
+          format: sarif
+          output-file: hadolint-deepeval.sarif
+
+      - name: 🔍 Lint Evalchemy Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        continue-on-error: true
+        with:
+          dockerfile: docker/evalchemy-cpu.Dockerfile
+          format: sarif
+          output-file: hadolint-evalchemy-cpu.sarif
+
+      - name: 🔍 Lint Tools Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        continue-on-error: true
+        with:
+          dockerfile: docker/workflow-tools.Dockerfile
+          format: sarif
+          output-file: hadolint-tools.sarif
+
+      - name: 🔍 Check Generated SARIF Files
+        if: always()
+        run: |
+          echo "::group::SARIF Files Status"
+          for file in hadolint-*.sarif; do
+            if [ -f "$file" ]; then
+              echo "✅ $file exists ($(wc -l < "$file") lines)"
+            else
+              echo "❌ $file missing"
+            fi
+          done
+          echo "::endgroup::"
+
+      - name: 📋 Upload Deepeval Hadolint Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('hadolint-deepeval.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: hadolint-deepeval.sarif
+
+      - name: 📋 Upload Evalchemy CPU Hadolint Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('hadolint-evalchemy-cpu.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: hadolint-evalchemy-cpu.sarif
+
+      - name: 📋 Upload Tools Hadolint Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('hadolint-tools.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: hadolint-tools.sarif
+
+      - name: 📋 Upload Hadolint SARIF Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hadolint-sarif-reports
+          path: |
+            hadolint-*.sarif
+
+  integration-test:
+    name: 🔗 Integration Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔨 Build Test Images
+        run: |
+          docker build -f docker/workflow-tools.Dockerfile -t test-tools . || echo "⚠️ Docker build issues (non-blocking)"
+        continue-on-error: true
+
+      - name: 🧪 Run Integration Tests
+        run: |
+          # 데이터셋 중복 제거 테스트
+          docker run --rm -v $(pwd):/workspace test-tools \
+            python3 /workspace/scripts/dedup_datasets.py --dry-run \
+            --input-manifest /workspace/datasets/manifests/test-manifest.yaml || echo "⚠️ Integration test issues (non-blocking)"
+        continue-on-error: true
+
+      - name: 📊 Integration Test Summary
+        run: |
+          echo "## 🔗 Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker image build: ⚠️ Informational" >> $GITHUB_STEP_SUMMARY
+          echo "- Script execution: ⚠️ Informational" >> $GITHUB_STEP_SUMMARY
+
+  # docs-check:
+  #   name: 📚 Documentation Check
+  #   runs-on: ubuntu-latest
+  #   
+  #   steps:
+  #     - name: 📥 Checkout Repository
+  #       uses: actions/checkout@v4
+
+  #     - name: 🐍 Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
+
+  #     - name: 📦 Install MkDocs Dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install -e ".[docs]" || pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-git-revision-date-localized-plugin "mkdocstrings[python]" mkdocs-minify-plugin
+  #       continue-on-error: true
+
+  #     - name: 🔍 Check Documentation Build
+  #       run: |
+  #         mkdocs build --strict || echo "⚠️ Documentation build issues (non-blocking)"
+  #       continue-on-error: true
+
+  #     - name: 📋 Check Links
+  #       run: |
+  #         # 간단한 링크 체크
+  #         python -c "
+  #         import re, os
+  #         
+  #         def check_links(directory):
+  #             broken_links = []
+  #             for root, dirs, files in os.walk(directory):
+  #                 for file in files:
+  #                     if file.endswith('.md'):
+  #                         filepath = os.path.join(root, file)
+  #                         try:
+  #                             with open(filepath, 'r', encoding='utf-8') as f:
+  #                                 content = f.read()
+  #                                 # 내부 링크 체크 (간단한 버전)
+  #                                 links = re.findall(r'\[.*?\]\((.*?)\)', content)
+  #                                 for link in links:
+  #                                     if link.startswith('./') or link.startswith('../'):
+  #                                         target = os.path.normpath(os.path.join(os.path.dirname(filepath), link))
+  #                                         if not os.path.exists(target):
+  #                                             broken_links.append(f'{filepath}: {link}')
+  #                         except Exception as e:
+  #                             print(f'⚠️ Error reading {filepath}: {e}')
+  #             return broken_links
+  #         
+  #         broken = check_links('.')
+  #         if broken:
+  #             print('⚠️ Broken links found (informational):')
+  #             for link in broken:
+  #                 print(f'  {link}')
+  #         else:
+  #             print('✅ All links are valid')
+  #         " || echo "⚠️ Link check issues (non-blocking)"
+  #       continue-on-error: true
+
+  summary:
+    name: 📊 Test Summary
+    runs-on: ubuntu-latest
+    needs: [lint, test, schema-validation, security, docker-lint]
+    if: always()
+    
+    steps:
+      - name: 📊 Generate Summary
+        run: |
+          echo "## 🎯 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎨 Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '⚠️ Issues (non-blocking)' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Test | ${{ needs.test.result == 'success' && '✅ Passed' || '⚠️ Issues (non-blocking)' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📋 Schema | ${{ needs.schema-validation.result == 'success' && '✅ Passed' || '⚠️ Issues (non-blocking)' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security | ${{ needs.security.result == 'success' && '✅ Passed' || '⚠️ Issues (non-blocking)' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 Docker | ${{ needs.docker-lint.result == 'success' && '✅ Passed' || '⚠️ Issues (non-blocking)' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "ℹ️ **All checks are informational and non-blocking.** Pipeline focuses on functionality over strict formatting." >> $GITHUB_STEP_SUMMARY

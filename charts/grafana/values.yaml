@@ -1,0 +1,527 @@
+# Grafana Configuration for VLLM Evaluation Monitoring
+grafana:
+  enabled: true
+  
+  # Image Configuration
+  image:
+    registry: docker.io
+    repository: grafana/grafana
+    tag: "10.2.0"
+    pullPolicy: IfNotPresent
+  
+  # Admin Configuration
+  admin:
+    existingSecret: ""
+    userKey: admin-user
+    passwordKey: admin-password
+    user: admin
+    password: "grafana-admin-password"
+  
+  # Resource Configuration
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Persistence Configuration
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: "standard"
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+  
+  # Service Configuration
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  # Ingress Configuration
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - "grafana.company.com"
+    path: /
+    pathType: Prefix
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - "grafana.company.com"
+  
+  # Security Context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    fsGroup: 472
+  
+  # Node Selector
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  
+  # Tolerations
+  tolerations: []
+  
+  # Affinity
+  affinity: {}
+
+# Data Sources Configuration
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      # ClickHouse Data Source
+      - name: ClickHouse
+        type: vertamedia-clickhouse-datasource
+        access: proxy
+        url: http://clickhouse.database.svc.cluster.local:8123
+        database: vllm_eval
+        basicAuth: false
+        isDefault: true
+        jsonData:
+          defaultDatabase: vllm_eval
+          timeout: 60
+          queryTimeout: 60
+        secureJsonData:
+          username: vllm_eval
+          password: clickhouse-password
+        editable: true
+      
+      # Prometheus Data Source
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoring.svc.cluster.local:9090
+        isDefault: false
+        jsonData:
+          timeInterval: 30s
+          queryTimeout: 60s
+        editable: true
+      
+      # Loki Data Source (for logs)
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100
+        isDefault: false
+        jsonData:
+          maxLines: 1000
+        editable: true
+
+# Dashboard Providers
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'vllm-eval-dashboards'
+        orgId: 1
+        folder: 'VLLM Evaluation'
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards/vllm-eval
+
+# Dashboard Configurations
+dashboards:
+  vllm-eval:
+    # Main VLLM Evaluation Overview Dashboard
+    vllm-eval-overview:
+      gnetId: null
+      revision: null
+      datasource: ClickHouse
+      json: |
+        {
+          "dashboard": {
+            "id": null,
+            "title": "VLLM Evaluation Overview",
+            "tags": ["vllm", "evaluation", "overview"],
+            "timezone": "UTC",
+            "refresh": "30s",
+            "time": {
+              "from": "now-24h",
+              "to": "now"
+            },
+            "panels": [
+              {
+                "id": 1,
+                "title": "Latest Evaluation Results",
+                "type": "stat",
+                "targets": [
+                  {
+                    "expr": "SELECT model_tag, metric_name, metric_value FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 1 DAY ORDER BY timestamp DESC LIMIT 10",
+                    "format": "table"
+                  }
+                ],
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "thresholds"
+                    },
+                    "thresholds": {
+                      "steps": [
+                        {"color": "red", "value": 0},
+                        {"color": "yellow", "value": 0.5},
+                        {"color": "green", "value": 0.8}
+                      ]
+                    }
+                  }
+                },
+                "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+              },
+              {
+                "id": 2,
+                "title": "Evaluation Trend (7 Days)",
+                "type": "timeseries",
+                "targets": [
+                  {
+                    "expr": "SELECT timestamp, avg(metric_value) as avg_score FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 7 DAY GROUP BY timestamp ORDER BY timestamp",
+                    "format": "time_series"
+                  }
+                ],
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "palette-classic"
+                    }
+                  }
+                },
+                "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+              },
+              {
+                "id": 3,
+                "title": "Model Performance Comparison",
+                "type": "barchart",
+                "targets": [
+                  {
+                    "expr": "SELECT model_tag, avg(metric_value) as avg_score FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 7 DAY GROUP BY model_tag ORDER BY avg_score DESC",
+                    "format": "table"
+                  }
+                ],
+                "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+              },
+              {
+                "id": 4,
+                "title": "Metric Category Breakdown",
+                "type": "piechart",
+                "targets": [
+                  {
+                    "expr": "SELECT metric_category, count(*) as count FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 1 DAY GROUP BY metric_category",
+                    "format": "table"
+                  }
+                ],
+                "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+              },
+              {
+                "id": 5,
+                "title": "Evaluation Execution Time",
+                "type": "histogram",
+                "targets": [
+                  {
+                    "expr": "SELECT evaluation_time_seconds FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 7 DAY",
+                    "format": "table"
+                  }
+                ],
+                "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+              }
+            ]
+          }
+        }
+    
+    # Detailed Metrics Dashboard
+    vllm-eval-metrics:
+      json: |
+        {
+          "dashboard": {
+            "id": null,
+            "title": "VLLM Evaluation Metrics Detail",
+            "tags": ["vllm", "evaluation", "metrics"],
+            "timezone": "UTC",
+            "refresh": "1m",
+            "time": {
+              "from": "now-7d",
+              "to": "now"
+            },
+            "templating": {
+              "list": [
+                {
+                  "name": "model_tag",
+                  "type": "query",
+                  "query": "SELECT DISTINCT model_tag FROM vllm_eval.results ORDER BY model_tag",
+                  "multi": true,
+                  "includeAll": true
+                },
+                {
+                  "name": "metric_name",
+                  "type": "query",
+                  "query": "SELECT DISTINCT metric_name FROM vllm_eval.results ORDER BY metric_name",
+                  "multi": true,
+                  "includeAll": true
+                }
+              ]
+            },
+            "panels": [
+              {
+                "id": 1,
+                "title": "Metric Trends by Model",
+                "type": "timeseries",
+                "targets": [
+                  {
+                    "expr": "SELECT timestamp, model_tag, metric_name, metric_value FROM vllm_eval.results WHERE model_tag IN ($model_tag) AND metric_name IN ($metric_name) ORDER BY timestamp",
+                    "format": "time_series"
+                  }
+                ],
+                "gridPos": {"h": 12, "w": 24, "x": 0, "y": 0}
+              },
+              {
+                "id": 2,
+                "title": "Regression Detection",
+                "type": "table",
+                "targets": [
+                  {
+                    "expr": "SELECT model_tag, metric_name, current_avg, previous_avg, (current_avg - previous_avg) / previous_avg * 100 as change_percent FROM (SELECT model_tag, metric_name, avg(metric_value) as current_avg FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 1 DAY GROUP BY model_tag, metric_name) current JOIN (SELECT model_tag, metric_name, avg(metric_value) as previous_avg FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 2 DAY AND timestamp < now() - INTERVAL 1 DAY GROUP BY model_tag, metric_name) previous USING (model_tag, metric_name) WHERE change_percent < -10",
+                    "format": "table"
+                  }
+                ],
+                "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12}
+              }
+            ]
+          }
+        }
+    
+    # System Performance Dashboard
+    vllm-eval-system:
+      json: |
+        {
+          "dashboard": {
+            "id": null,
+            "title": "VLLM Evaluation System Performance",
+            "tags": ["vllm", "evaluation", "system", "performance"],
+            "timezone": "UTC",
+            "refresh": "30s",
+            "time": {
+              "from": "now-1h",
+              "to": "now"
+            },
+            "panels": [
+              {
+                "id": 1,
+                "title": "Workflow Execution Status",
+                "type": "stat",
+                "targets": [
+                  {
+                    "expr": "argo_workflows_count",
+                    "datasource": "Prometheus"
+                  }
+                ],
+                "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0}
+              },
+              {
+                "id": 2,
+                "title": "GPU Utilization",
+                "type": "timeseries",
+                "targets": [
+                  {
+                    "expr": "nvidia_gpu_utilization_gpu",
+                    "datasource": "Prometheus"
+                  }
+                ],
+                "gridPos": {"h": 6, "w": 18, "x": 6, "y": 0}
+              },
+              {
+                "id": 3,
+                "title": "Memory Usage",
+                "type": "timeseries",
+                "targets": [
+                  {
+                    "expr": "container_memory_usage_bytes{pod=~\".*vllm-eval.*\"}",
+                    "datasource": "Prometheus"
+                  }
+                ],
+                "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6}
+              },
+              {
+                "id": 4,
+                "title": "CPU Usage",
+                "type": "timeseries",
+                "targets": [
+                  {
+                    "expr": "rate(container_cpu_usage_seconds_total{pod=~\".*vllm-eval.*\"}[5m])",
+                    "datasource": "Prometheus"
+                  }
+                ],
+                "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6}
+              },
+              {
+                "id": 5,
+                "title": "Recent Logs",
+                "type": "logs",
+                "targets": [
+                  {
+                    "expr": "{namespace=\"vllm-eval\"}",
+                    "datasource": "Loki"
+                  }
+                ],
+                "gridPos": {"h": 10, "w": 24, "x": 0, "y": 14}
+              }
+            ]
+          }
+        }
+
+# Plugins Configuration
+plugins:
+  - vertamedia-clickhouse-datasource
+  - grafana-piechart-panel
+  - grafana-worldmap-panel
+  - grafana-clock-panel
+
+# SMTP Configuration (for alerts)
+smtp:
+  enabled: true
+  host: "smtp.company.com:587"
+  user: "grafana@company.com"
+  password: "smtp-password"
+  from_address: "grafana@company.com"
+  from_name: "VLLM Eval Grafana"
+
+# Alerting Configuration
+alerting:
+  rules.yaml:
+    apiVersion: 1
+    groups:
+      - name: vllm_eval_alerts
+        folder: VLLM Evaluation
+        interval: 1m
+        rules:
+          - uid: vllm_eval_regression
+            title: VLLM Model Performance Regression
+            condition: A
+            data:
+              - refId: A
+                queryType: ""
+                relativeTimeRange:
+                  from: 3600
+                  to: 0
+                datasource:
+                  type: vertamedia-clickhouse-datasource
+                  uid: clickhouse
+                model:
+                  query: "SELECT model_tag, metric_name, avg(metric_value) as current_avg FROM vllm_eval.results WHERE timestamp >= now() - INTERVAL 1 HOUR GROUP BY model_tag, metric_name HAVING current_avg < 0.7"
+            noDataState: NoData
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: "Model {{ $labels.model_tag }} performance regression detected"
+              description: "Metric {{ $labels.metric_name }} for model {{ $labels.model_tag }} dropped below threshold"
+            labels:
+              severity: warning
+              team: ml-ops
+  
+  contactPoints.yaml:
+    apiVersion: 1
+    contactPoints:
+      - name: teams-webhook
+        receivers:
+          - uid: teams_webhook
+            type: teams
+            settings:
+              url: "https://company.webhook.office.com/webhookb2/..."
+              title: "VLLM Evaluation Alert"
+              message: "{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}"
+      
+      - name: email-alerts
+        receivers:
+          - uid: email_alerts
+            type: email
+            settings:
+              addresses: ["ml-ops@company.com", "vllm-eval@company.com"]
+              subject: "VLLM Evaluation Alert: {{ .GroupLabels.alertname }}"
+  
+  policies.yaml:
+    apiVersion: 1
+    policies:
+      - receiver: teams-webhook
+        group_by: ['alertname', 'cluster', 'service']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 1h
+        matchers:
+          - severity = warning
+        routes:
+          - receiver: email-alerts
+            matchers:
+              - severity = critical
+            continue: true
+
+# Environment Variables
+env:
+  GF_SECURITY_ADMIN_PASSWORD: "grafana-admin-password"
+  GF_INSTALL_PLUGINS: "vertamedia-clickhouse-datasource,grafana-piechart-panel"
+  GF_FEATURE_TOGGLES_ENABLE: "ngalert"
+  GF_UNIFIED_ALERTING_ENABLED: "true"
+  GF_ALERTING_ENABLED: "false"
+
+# Security Configuration
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 472
+  fsGroup: 472
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 472
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      ports:
+      - protocol: TCP
+        port: 3000
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: database
+      ports:
+      - protocol: TCP
+        port: 8123
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      ports:
+      - protocol: TCP
+        port: 9090
+      - protocol: TCP
+        port: 3100
+
+# Monitoring
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  labels:
+    app: grafana
+  interval: 30s
+  scrapeTimeout: 10s 

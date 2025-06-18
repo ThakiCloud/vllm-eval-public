@@ -1,0 +1,62 @@
+# Deepeval Configuration
+# Configuration for VLLM model evaluation using Deepeval
+
+# Model configuration
+model:
+  endpoint: "${MODEL_ENDPOINT:-http://localhost:8000/v1}"
+  model_name: "${MODEL_NAME:-vllm-model}"
+  api_key: "${OPENAI_API_KEY:-}"
+  timeout: 30
+  max_retries: 3
+
+# Evaluation settings
+evaluation:
+  # Test categories to run
+  test_categories:
+    - rag_precision
+    - hallucination_detection
+    - context_relevance
+    - answer_relevancy
+    - faithfulness
+  
+  # Scoring thresholds
+  thresholds:
+    rag_precision: 0.7
+    hallucination_detection: 0.8
+    context_relevance: 0.7
+    answer_relevancy: 0.7
+    faithfulness: 0.8
+  
+  # Dataset configuration
+  dataset:
+    path: "${DATASET_PATH:-/data}"
+    format: "jsonl"
+    sample_size: null  # null means use all data
+    shuffle: true
+    random_seed: 42
+
+# Output configuration
+output:
+  results_path: "${RESULTS_PATH:-/results}"
+  format: "json"
+  include_details: true
+  save_individual_results: true
+
+# Logging configuration
+logging:
+  level: "${LOG_LEVEL:-INFO}"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "/results/deepeval.log"
+
+# Performance settings
+performance:
+  parallel_workers: 4
+  batch_size: 10
+  cache_enabled: true
+  cache_dir: "/tmp/deepeval_cache"
+
+# API rate limiting
+rate_limiting:
+  requests_per_minute: 60
+  requests_per_second: 2
+  backoff_factor: 2.0 

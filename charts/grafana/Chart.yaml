@@ -1,0 +1,31 @@
+apiVersion: v2
+name: grafana
+description: Grafana dashboards for VLLM evaluation monitoring
+type: application
+version: 0.1.0
+appVersion: "10.2.0"
+
+keywords:
+  - grafana
+  - monitoring
+  - dashboards
+  - vllm
+  - metrics
+
+home: https://github.com/your-org/vllm-eval
+sources:
+  - https://github.com/grafana/grafana
+
+maintainers:
+  - name: VLLM Eval Team
+    email: vllm-eval@company.com
+
+dependencies:
+  - name: grafana
+    version: "7.0.0"
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled
+
+annotations:
+  category: Monitoring
+  licenses: Apache-2.0 

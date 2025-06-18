@@ -1,0 +1,65 @@
+# Job for running VLLM evaluation
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: evalchemy
+  labels:
+    app: vllm-eval
+spec:
+  # 완료 후 정리 (2분)
+  ttlSecondsAfterFinished: 120
+  
+  template:
+    metadata:
+      labels:
+        app: vllm-eval
+    spec:
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 1000
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+        - name: evalchemy
+          image: your-images:latest
+          imagePullPolicy: Always
+          
+          # 환경 변수로 간단하게 설정
+          env:
+            - name: VLLM_MODEL_ENDPOINT
+              value: "http://vllm:8000/v1/completions"
+          
+          # 실행 명령
+          args:
+            - "--endpoint"
+            - "$(VLLM_MODEL_ENDPOINT)"
+            - "--config"
+            - "/app/eval/evalchemy/configs/eval_config.json"
+          
+          # 결과 저장용 볼륨
+          volumeMounts:
+            - name: model-results-storage
+              mountPath: /app/eval/evalchemy/results
+            - name: parsed-results-storage
+              mountPath: /app/eval/evalchemy/parsed
+      
+      volumes:
+        # 호스트 경로 사용 (개발/테스트용)
+        # - name: model-results-storage
+        #   hostPath:
+        #     path: /Users/pyj/Documents/vllm-eval-results
+        #     type: DirectoryOrCreate
+        
+        # PersistentVolumeClaim 사용 (필요시 주석 해제)
+        - name: model-results-storage
+          persistentVolumeClaim:
+            claimName: model-results-pvc
+        - name: parsed-results-storage
+          persistentVolumeClaim:
+            claimName: parsed-results-pvc
+        
+        # NFS 사용:
+        # - name: results
+        #   nfs:
+        #     server: your-nfs-server.example.com
+        #     path: /exports/vllm-eval-results 
