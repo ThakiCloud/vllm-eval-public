@@ -23,10 +23,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-#      deepeval: ${{ steps.filter.outputs.deepeval }}
       evalchemy: ${{ steps.filter.outputs.evalchemy }}
-#      tools: ${{ steps.filter.outputs.tools }}
-#      vllm-benchmark: ${{ steps.filter.outputs.vllm-benchmark }}
 
     steps:
       - uses: actions/checkout@v4
@@ -39,80 +36,9 @@ jobs:
               - 'eval/evalchemy/**'
               - 'datasets/**'
               - 'scripts/standardize_evalchemy.py'
-#            vllm-benchmark:
-#              - 'docker/vllm-benchmark.Dockerfile'
-#              - 'scripts/standardize_vllm_benchmark.py'
-#              - 'scripts/run_vllm_benchmark.py'
-#              - 'scripts/run_vllm_accuracy.py'
-
-  # build-deepeval:
-  #   name: 🧪 Build Deepeval Image
-  #   needs: [changes]
-  #   if: needs.changes.outputs.deepeval == 'true'
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   outputs:
-  #     image-digest: ${{ steps.build.outputs.digest }}
-  #     image-tags: ${{ steps.meta.outputs.tags }}
-    
-  #   steps:
-  #     - name: 📥 Checkout Repository
-  #       uses: actions/checkout@v4
-
-  #     - name: 🐳 Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-
-  #     - name: 🔑 Log in to Container Registry
-  #       if: github.event_name != 'pull_request'
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: 🏷️ Extract Metadata
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-deepeval
-  #         tags: |
-  #           type=ref,event=branch
-  #           type=ref,event=pr
-  #           type=semver,pattern={{version}}
-  #           type=semver,pattern={{major}}.{{minor}}
-  #           type=semver,pattern={{major}}
-  #           type=raw,value=latest,enable={{is_default_branch}}
-  #           type=raw,value=release-{{sha}},enable={{is_default_branch}}
-  #           type=raw,value=release-{{date 'YYYYMMDD-HHmmss'}},enable={{is_default_branch}}
-
-  #     - name: 📄 Create requirements file
-  #       run: |
-  #         # Use existing requirements-deepeval.txt file
-  #         echo "Using existing requirements-deepeval.txt for mlfoundations/Deepeval"
-
-  #     - name: 🔨 Build and Push
-  #       id: build
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: .
-  #         file: ./docker/deepeval.Dockerfile
-  #         platforms: linux/amd64
-  #         push: ${{ github.event_name != 'pull_request' }}
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
-
-  #     - name: ✅ Image Summary
-  #       run: |
-  #         echo "### 🧪 Deepeval Image Built Successfully" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
 
   build-evalchemy:
-    name: Build Evalchemy Image
+    name: 🏗️ Build and Push Evalchemy Image
     needs: [changes]
     if: needs.changes.outputs.evalchemy == 'true'
     runs-on: ubuntu-latest
@@ -120,12 +46,23 @@ jobs:
       contents: read
       packages: write
     outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tags: ${{ steps.meta.outputs.tags }}
+      image_tag: ${{ steps.get_tag.outputs.tag }}
+      image_name_lowercase: ${{ steps.set_lowercase_name.outputs.name }}
     
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+
+      - name: ⚙️ Set lowercase image name
+        id: set_lowercase_name
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}-evalchemy' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: ⚙️ Generate timestamp-based image tag
+        id: get_tag
+        run: |
+          TAG="release-$(date -u +'%Y%m%d-%H%M%S')"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Generated tag: ${TAG}"
 
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -137,21 +74,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🏷️ Extract Metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-evalchemy
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr  
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=release-{{sha}},enable={{is_default_branch}}
-            type=raw,value=release-{{date 'YYYYMMDD-HHmmss'}},enable={{is_default_branch}}
 
       - name: 📄 Create requirements file
         run: |
@@ -166,218 +88,55 @@ jobs:
           file: ./docker/evalchemy.Dockerfile
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.get_tag.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: ✅ Image Summary
         run: |
           echo "### ⚗️ Evalchemy Image Built Successfully" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:**" >> $GITHUB_STEP_SUMMARY
+          echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.get_tag.outputs.tag }}`" >> $GITHUB_STEP_SUMMARY
 
-  # build-vllm-benchmark:
-  #   name: Build VLLM Benchmark Image
-  #   needs: [changes]
-  #   if: needs.changes.outputs.vllm-benchmark == 'true'
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   outputs:
-  #     image-digest: ${{ steps.build.outputs.digest }}
-  #     image-tags: ${{ steps.meta.outputs.tags }}
-    
-  #   steps:
-  #     - name: 📥 Checkout Repository
-  #       uses: actions/checkout@v4
+  update-manifest-for-evalchemy:
+    name: 🔄 Update Manifest for Evalchemy
+    needs: [build-evalchemy]
+    if: github.event_name != 'pull_request' && needs.build-evalchemy.outputs.image_tag != ''
+    runs-on: ubuntu-latest
 
-  #     - name: 🐳 Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
+    steps:
+      - name: 📥 Checkout Manifest Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ThakiCloud/vllm-manifests-public
+          token: ${{ secrets.MANIFESTS_SECRET }}
+          ref: main
 
-  #     - name: 🔑 Log in to Container Registry
-  #       if: github.event_name != 'pull_request'
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: 🏷️ Extract Metadata
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-vllm-benchmark
-  #         tags: |
-  #           type=ref,event=branch
-  #           type=ref,event=pr  
-  #           type=semver,pattern={{version}}
-  #           type=semver,pattern={{major}}.{{minor}}
-  #           type=semver,pattern={{major}}
-  #           type=raw,value=latest,enable={{is_default_branch}}
-  #           type=raw,value=release-{{sha}},enable={{is_default_branch}}
-  #           type=raw,value=release-{{date 'YYYYMMDD-HHmmss'}},enable={{is_default_branch}}
-
-  #     - name: 🔨 Build and Push
-  #       id: build
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: .
-  #         file: ./docker/vllm-benchmark.Dockerfile
-  #         platforms: linux/amd64
-  #         push: ${{ github.event_name != 'pull_request' }}
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
-
-  #     - name: ✅ Image Summary
-  #       run: |
-  #         echo "### 🚀 VLLM Benchmark Image Built Successfully" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
-
-  # build-workflow-tools:
-  #   name: 🛠️ Build Workflow Tools Image
-  #   needs: [changes]
-  #   if: needs.changes.outputs.tools == 'true'
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   outputs:
-  #     image-digest: ${{ steps.build.outputs.digest }}
-  #     image-tags: ${{ steps.meta.outputs.tags }}
-    
-  #   steps:
-  #     - name: 📥 Checkout Repository
-  #       uses: actions/checkout@v4
-
-  #     - name: 🐳 Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-
-  #     - name: 🔑 Log in to Container Registry
-  #       if: github.event_name != 'pull_request'
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: 🏷️ Extract Metadata
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-tools
-  #         tags: |
-  #           type=ref,event=branch
-  #           type=ref,event=pr
-  #           type=semver,pattern={{version}}
-  #           type=semver,pattern={{major}}.{{minor}}
-  #           type=semver,pattern={{major}}
-  #           type=raw,value=latest,enable={{is_default_branch}}
-  #           type=raw,value=release-{{sha}},enable={{is_default_branch}}
-  #           type=raw,value=release-{{date 'YYYYMMDD-HHmmss'}},enable={{is_default_branch}}
-
-  #     - name: 🔨 Build and Push
-  #       id: build
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: .
-  #         file: ./docker/workflow-tools.Dockerfile
-  #         platforms: linux/amd64,linux/arm64
-  #         push: ${{ github.event_name != 'pull_request' }}
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
-
-  #     - name: ✅ Image Summary
-  #       run: |
-  #         echo "### 🛠️ Workflow Tools Image Built Successfully" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
-
-  # update-manifests-for-argocd:
-  #   name: 🚀 Update K8s Manifests
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #   needs: [changes, build-evalchemy, build-vllm-benchmark, build-frontend]
-  #   if: |
-  #     github.ref == 'refs/heads/main' && github.event_name == 'push' &&
-  #     (needs.changes.outputs.evalchemy == 'true' ||
-  #      needs.changes.outputs.vllm-benchmark == 'true' ||
-  #      needs.changes.outputs.frontend == 'true')
-
-  #   steps:
-  #     - name: ⬇️ Checkout Repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         # 변경 사항을 푸시하려면 PAT가 필요합니다.
-  #         token: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: 🔄 Update image tags in manifests
-  #       run: |
-  #         # Update manifests only for images that were rebuilt
-  #         if [[ "${{ needs.changes.outputs.evalchemy }}" == "true" ]]; then
-  #           EVALCHEMY_IMAGE_TAG=$(echo "${{ needs.build-evalchemy.outputs.image-tags }}" | cut -d ',' -f 1)
-  #           echo "Updating evalchemy image to: $EVALCHEMY_IMAGE_TAG"
-  #           sed -i "s|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-evalchemy:.*|image: $EVALCHEMY_IMAGE_TAG|g" k8s/evalchemy-job.yaml
-  #         fi
+      - name: 📝 Update Image Tag in Manifest
+        run: |
+          IMAGE_TAG=${{ needs.build-evalchemy.outputs.image_tag }}
+          IMAGE_NAME_LOWERCASE=${{ needs.build-evalchemy.outputs.image_name_lowercase }}
+          MANIFEST_FILE=vllm-eval/evalchemy-job.yaml
           
-  #         if [[ "${{ needs.changes.outputs.vllm-benchmark }}" == "true" ]]; then
-  #           VLLM_BENCHMARK_IMAGE_TAG=$(echo "${{ needs.build-vllm-benchmark.outputs.image-tags }}" | cut -d ',' -f 1)
-  #           echo "Updating vllm-benchmark image to: $VLLM_BENCHMARK_IMAGE_TAG"
-  #           sed -i "s|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-vllm-benchmark:.*|image: $VLLM_BENCHMARK_IMAGE_TAG|g" k8s/vllm-benchmark-job.yaml
-  #         fi
+          echo "Updating image in $MANIFEST_FILE to ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:$IMAGE_TAG"
+          
+          # Check if the file exists before attempting to modify it
+          if [ -f "$MANIFEST_FILE" ]; then
+            sed -i "s|image: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:.*|image: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${IMAGE_TAG}|" $MANIFEST_FILE
+          else
+            echo "Error: Manifest file $MANIFEST_FILE not found."
+            exit 1
+          fi
 
-  #         if [[ "${{ needs.changes.outputs.frontend }}" == "true" ]]; then
-  #           FRONTEND_IMAGE_TAG=$(echo "${{ needs.build-frontend.outputs.image-tags }}" | cut -d ',' -f 1)
-  #           echo "Updating frontend image to: $FRONTEND_IMAGE_TAG"
-  #           # 🚨 Please verify the manifest file name for frontend
-  #           # sed -i "s|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:.*|image: $FRONTEND_IMAGE_TAG|g" k8s/frontend-deployment.yaml
-  #         fi
-
-  #     - name: ⬆️ Commit and push changes
-  #       run: |
-  #         git config user.name "github-actions[bot]"
-  #         git config user.email "github-actions[bot]@users.noreply.github.com"
-  #         if [[ -n $(git status -s) ]]; then
-  #           git commit -am "Update image tags [skip ci]"
-  #           git push
-  #           echo "✅ Manifests updated and pushed"
-  #         else
-  #           echo "✅ No changes to commit"
-  #         fi
-
-  # deployment-summary:
-  #   name: "📊 Deployment Summary"
-  #   runs-on: ubuntu-latest
-  #   needs: [changes, build-evalchemy, build-vllm-benchmark, build-frontend, update-manifests-for-argocd]
-  #   if: |
-  #     github.ref == 'refs/heads/main' && github.event_name == 'push' &&
-  #     (needs.changes.outputs.evalchemy == 'true' ||
-  #      needs.changes.outputs.vllm-benchmark == 'true' ||
-  #      needs.changes.outputs.frontend == 'true')
-  #   steps:
-  #     - name: 📝 Final Summary
-  #       run: |
-  #         echo "## 🎉 Image Build & Manifest Update Complete" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         echo "### Built Images:" >> $GITHUB_STEP_SUMMARY
-  #         if [[ "${{ needs.changes.outputs.evalchemy }}" == "true" ]]; then
-  #           echo "- **Evalchemy:** ${{ needs.build-evalchemy.outputs.image-tags }}" >> $GITHUB_STEP_SUMMARY
-  #         fi
-  #         if [[ "${{ needs.changes.outputs.vllm-benchmark }}" == "true" ]]; then
-  #           echo "- **VLLM Benchmark:** ${{ needs.build-vllm-benchmark.outputs.image-tags }}" >> $GITHUB_STEP_SUMMARY
-  #         fi
-  #         if [[ "${{ needs.changes.outputs.frontend }}" == "true" ]]; then
-  #           echo "- **Frontend:** ${{ needs.build-frontend.outputs.image-tags }}" >> $GITHUB_STEP_SUMMARY
-  #         fi
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
-  #         echo "- Images are pushed to GHCR" >> $GITHUB_STEP_SUMMARY
-  #         echo "- K8s manifests are updated in the manifest repository" >> $GITHUB_STEP_SUMMARY
-  #         echo "- Argo CD will now sync the changes to the cluster" >> $GITHUB_STEP_SUMMARY
+      - name: 🚀 Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "CI: update evalchemy image to ${{ needs.build-evalchemy.outputs.image_tag }}"
+          branch: main
+          commit_options: '--no-verify'
+          commit_user_name: 'yunjae-park1111'
+          commit_user_email: 'yunjae.park@thakicloud.co.kr'
