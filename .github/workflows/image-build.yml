@@ -36,6 +36,7 @@ jobs:
               - 'eval/evalchemy/**'
               - 'datasets/**'
               - 'scripts/standardize_evalchemy.py'
+              - '.github/workflows/image-build.yml'
 
   build-evalchemy:
     name: 🏗️ Build and Push Evalchemy Image
