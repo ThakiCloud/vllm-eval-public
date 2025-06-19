@@ -127,7 +127,7 @@ jobs:
           
           # Check if the file exists before attempting to modify it
           if [ -f "$MANIFEST_FILE" ]; then
-            sed -i "s|image: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:.*|image: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${IMAGE_TAG}|" $MANIFEST_FILE
+            sed -i "s|image: *|image: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${IMAGE_TAG}|" $MANIFEST_FILE
           else
             echo "Error: Manifest file $MANIFEST_FILE not found."
             exit 1
