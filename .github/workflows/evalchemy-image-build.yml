@@ -36,7 +36,7 @@ jobs:
               - 'eval/evalchemy/**'
               - 'datasets/**'
               - 'scripts/standardize_evalchemy.py'
-              - '.github/workflows/image-build.yml'
+              - '.github/workflows/evalchemy-image-build.yml'
 
   build-evalchemy:
     name: 🏗️ Build and Push Evalchemy Image
@@ -127,7 +127,7 @@ jobs:
           
           # Check if the file exists before attempting to modify it
           if [ -f "$MANIFEST_FILE" ]; then
-            sed -i "s|image: *|image: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${IMAGE_TAG}|" $MANIFEST_FILE
+            sed -E "s|(image:\s*).*$|\1${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${IMAGE_TAG}|" -i $MANIFEST_FILE
           else
             echo "Error: Manifest file $MANIFEST_FILE not found."
             exit 1
