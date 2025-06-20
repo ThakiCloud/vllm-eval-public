@@ -23,7 +23,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      evalchemy: ${{ steps.filter.outputs.evalchemy }}
+      evalchemy: false #${{ steps.filter.outputs.evalchemy }}
 
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,6 @@ jobs:
               - 'eval/evalchemy/**'
               - 'datasets/**'
               - 'scripts/standardize_evalchemy.py'
-              - '.github/workflows/evalchemy-image-build.yml'
 
   build-evalchemy:
     name: 🏗️ Build and Push Evalchemy Image

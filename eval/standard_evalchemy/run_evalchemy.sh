@@ -651,7 +651,7 @@ standardize_results() {
     mkdir -p "$parsed_dir"
     log INFO "Standardized results will be saved in: $parsed_dir"
 
-    local result_files=("$results_dir"/*_results.json)
+    local result_files=("$results_dir"/*_results*.json)
     if [[ ${#result_files[@]} -eq 0 || ! -e "${result_files[0]}" ]]; then
         log WARN "No result files found to standardize in $results_dir"
         return 0
@@ -862,9 +862,6 @@ main() {
     # Aggregate results
     aggregate_results
     
-    # Standardize results
-    standardize_results "$RESULTS_DIR"
-    
     # Final summary
     local successful_count=$((${#benchmark_array[@]} - ${#failed_benchmarks[@]}))
     
@@ -882,6 +879,9 @@ main() {
     log INFO "Results directory: $RESULTS_DIR"
     log INFO "Summary file: $SUMMARY_FILE"
     
+    # Standardize results
+    standardize_results "$RESULTS_DIR"
+
     # Exit with appropriate code
     if [[ ${#failed_benchmarks[@]} -eq 0 ]]; then
         log INFO "All benchmarks completed successfully"

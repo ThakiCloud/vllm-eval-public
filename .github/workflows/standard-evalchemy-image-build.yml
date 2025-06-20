@@ -23,7 +23,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      vllm-benchmark: false #${{ steps.filter.outputs.vllm-benchmark }}
+      standard-evalchemy: false #${{ steps.filter.outputs.standard-evalchemy }}
 
     steps:
       - uses: actions/checkout@v4
@@ -31,16 +31,15 @@ jobs:
         id: filter
         with:
           filters: |
-            vllm-benchmark:
-              - 'docker/vllm-benchmark.Dockerfile'
-              - 'scripts/standardize_vllm_benchmark.py'
-              - 'scripts/run_vllm_benchmark.py'
-              - 'scripts/analyze_vllm_results.py'
+            standard-evalchemy:
+              - 'docker/standard_evalchemy.Dockerfile'
+              - 'eval/standard_evalchemy/**'
+              - 'scripts/standardize_evalchemy.py'
 
-  build-vllm-benchmark:
-    name: 🏗️ Build and Push VLLM Benchmark Image
+  build-standard-evalchemy:
+    name: 🏗️ Build and Push Standard Evalchemy Image
     needs: [changes]
-    if: needs.changes.outputs.vllm-benchmark == 'true'
+    if: needs.changes.outputs.standard-evalchemy == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,7 +54,7 @@ jobs:
 
       - name: ⚙️ Set lowercase image name
         id: set_lowercase_name
-        run: echo "name=$(echo '${{ env.IMAGE_NAME }}-vllm-benchmark' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}-standard-evalchemy' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: ⚙️ Generate timestamp-based image tag
         id: get_tag
@@ -77,15 +76,15 @@ jobs:
 
       - name: 📄 Create requirements file
         run: |
-          # Use existing requirements-vllm-benchmark.txt file
-          echo "Using existing requirements-vllm-benchmark.txt for mlfoundations/VLLM Benchmark"
+          # Use existing requirements-evalchemy.txt file
+          echo "Using existing requirements-evalchemy.txt for mlfoundations/Evalchemy"
 
       - name: 🔨 Build and Push
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/vllm-benchmark.Dockerfile
+          file: ./docker/standard_evalchemy.Dockerfile
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.get_tag.outputs.tag }}
@@ -97,15 +96,15 @@ jobs:
 
       - name: ✅ Image Summary
         run: |
-          echo "### ⚗️ VLLM Benchmark Image Built Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚗️ Standard Evalchemy Image Built Successfully" >> $GITHUB_STEP_SUMMARY
           echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
           echo "**Tag:**" >> $GITHUB_STEP_SUMMARY
           echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.get_tag.outputs.tag }}`" >> $GITHUB_STEP_SUMMARY
 
-  update-manifest-for-vllm-benchmark:
-    name: 🔄 Update Manifest for VLLM Benchmark
-    needs: [build-vllm-benchmark]
-    if: github.event_name != 'pull_request' && needs.build-vllm-benchmark.outputs.image_tag != ''
+  update-manifest-for-standard-evalchemy:
+    name: 🔄 Update Manifest for Standard Evalchemy
+    needs: [build-standard-evalchemy]
+    if: github.event_name != 'pull_request' && needs.build-standard-evalchemy.outputs.image_tag != ''
     runs-on: ubuntu-latest
 
     steps:
@@ -118,9 +117,9 @@ jobs:
 
       - name: 📝 Update Image Tag in Manifest
         run: |
-          IMAGE_TAG=${{ needs.build-vllm-benchmark.outputs.image_tag }}
-          IMAGE_NAME_LOWERCASE=${{ needs.build-vllm-benchmark.outputs.image_name_lowercase }}
-          MANIFEST_FILE=vllm-eval/vllm-benchmark-job.yaml
+          IMAGE_TAG=${{ needs.build-standard-evalchemy.outputs.image_tag }}
+          IMAGE_NAME_LOWERCASE=${{ needs.build-standard-evalchemy.outputs.image_name_lowercase }}
+          MANIFEST_FILE=vllm-eval/standard-evalchemy-job.yaml
           
           echo "Updating image in $MANIFEST_FILE to ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:$IMAGE_TAG"
           
@@ -135,7 +134,7 @@ jobs:
       - name: 🚀 Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "CI: update vllm-benchmark image to ${{ needs.build-vllm-benchmark.outputs.image_tag }}"
+          commit_message: "CI: update standard-evalchemy image to ${{ needs.build-standard-evalchemy.outputs.image_tag }}"
           branch: main
           commit_options: '--no-verify'
           commit_user_name: 'yunjae-park1111'
