@@ -1,0 +1,143 @@
+name: 🐳 Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/*'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  changes:
+    name: 🔍 Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      vllm-benchmark: ${{ steps.filter.outputs.vllm-benchmark }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            vllm-benchmark:
+              - 'docker/vllm-benchmark.Dockerfile'
+              - 'scripts/standardize_vllm_benchmark.py'
+              - 'scripts/run_vllm_benchmark.py'
+              - 'scripts/run_vllm_accuracy.py'
+              - '.github/workflows/vllm-benchmark-image-build.yml'
+
+  build-vllm-benchmark:
+    name: 🏗️ Build and Push VLLM Benchmark Image
+    needs: [changes]
+    if: needs.changes.outputs.vllm-benchmark == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.get_tag.outputs.tag }}
+      image_name_lowercase: ${{ steps.set_lowercase_name.outputs.name }}
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set lowercase image name
+        id: set_lowercase_name
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}-vllm-benchmark' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: ⚙️ Generate timestamp-based image tag
+        id: get_tag
+        run: |
+          TAG="release-$(date -u +'%Y%m%d-%H%M%S')"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Generated tag: ${TAG}"
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📄 Create requirements file
+        run: |
+          # Use existing requirements-vllm-benchmark.txt file
+          echo "Using existing requirements-vllm-benchmark.txt for mlfoundations/VLLM Benchmark"
+
+      - name: 🔨 Build and Push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/vllm-benchmark.Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.get_tag.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: ✅ Image Summary
+        run: |
+          echo "### ⚗️ VLLM Benchmark Image Built Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:**" >> $GITHUB_STEP_SUMMARY
+          echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.get_tag.outputs.tag }}`" >> $GITHUB_STEP_SUMMARY
+
+  update-manifest-for-vllm-benchmark:
+    name: 🔄 Update Manifest for VLLM Benchmark
+    needs: [build-vllm-benchmark]
+    if: github.event_name != 'pull_request' && needs.build-vllm-benchmark.outputs.image_tag != ''
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Manifest Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ThakiCloud/vllm-manifests-public
+          token: ${{ secrets.MANIFESTS_SECRET }}
+          ref: main
+
+      - name: 📝 Update Image Tag in Manifest
+        run: |
+          IMAGE_TAG=${{ needs.build-vllm-benchmark.outputs.image_tag }}
+          IMAGE_NAME_LOWERCASE=${{ needs.build-vllm-benchmark.outputs.image_name_lowercase }}
+          MANIFEST_FILE=vllm-eval/vllm-benchmark-job.yaml
+          
+          echo "Updating image in $MANIFEST_FILE to ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:$IMAGE_TAG"
+          
+          # Check if the file exists before attempting to modify it
+          if [ -f "$MANIFEST_FILE" ]; then
+            sed -E "s|(image:\s*).*$|\1${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${IMAGE_TAG}|" -i $MANIFEST_FILE
+          else
+            echo "Error: Manifest file $MANIFEST_FILE not found."
+            exit 1
+          fi
+
+      - name: 🚀 Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "CI: update vllm-benchmark image to ${{ needs.build-vllm-benchmark.outputs.image_tag }}"
+          branch: main
+          commit_options: '--no-verify'
+          commit_user_name: 'yunjae-park1111'
+          commit_user_email: 'yunjae.park@thakicloud.co.kr'
