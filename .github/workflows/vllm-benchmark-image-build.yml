@@ -36,6 +36,7 @@ jobs:
               - 'scripts/standardize_vllm_benchmark.py'
               - 'scripts/run_vllm_benchmark.py'
               - 'scripts/run_vllm_accuracy.py'
+              - '.github/workflows/vllm-benchmark-image-build.yml'
 
   build-vllm-benchmark:
     name: 🏗️ Build and Push VLLM Benchmark Image
