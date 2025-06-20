@@ -62,10 +62,12 @@ fi
 # 환경 변수 기본값 설정
 VLLM_ENDPOINT="${VLLM_ENDPOINT:-$DEFAULT_ENDPOINT}"
 OUTPUT_DIR="${OUTPUT_DIR:-/results}"
+PARSED_DIR="$(dirname "$OUTPUT_DIR")/parsed"
 REQUEST_RATE="${REQUEST_RATE:-1.0}"
 
 # 출력 디렉토리 생성
 mkdir -p "$OUTPUT_DIR"
+mkdir -p "$PARSED_DIR"
 
 # 타임스탬프 생성 (UTC)
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -179,6 +181,13 @@ print(json.dumps(merged))
         if [ -n "$RESULT_JSON" ] && [ -f "$RESULT_JSON" ]; then
             echo "📈 시나리오 '$SCENARIO_NAME' 결과 분석 중: $RESULT_JSON" | tee -a "$MAIN_LOG_FILE"
             python3 /app/scripts/analyze_vllm_results.py "$RESULT_JSON" | tee -a "$MAIN_LOG_FILE"
+            
+            # 표준화된 JSON 파일 경로 생성
+            STANDARDIZED_FILENAME="${SCENARIO_NAME}_${TIMESTAMP}_standardized.json"
+            STANDARDIZED_JSON_PATH="$PARSED_DIR/$STANDARDIZED_FILENAME"
+
+            echo "🔄 결과 표준화 중 -> $STANDARDIZED_JSON_PATH" | tee -a "$MAIN_LOG_FILE"
+            python3 /app/scripts/standardize_vllm_benchmark.py "$RESULT_JSON" --output_file "$STANDARDIZED_JSON_PATH" | tee -a "$MAIN_LOG_FILE"
         else
             echo "⚠️  시나리오 '$SCENARIO_NAME' 결과 JSON 파일을 찾을 수 없습니다: $SCENARIO_RESULT_DIR" | tee -a "$MAIN_LOG_FILE"
         fi
