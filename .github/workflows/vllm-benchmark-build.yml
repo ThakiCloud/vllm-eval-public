@@ -32,6 +32,7 @@ jobs:
               - 'docker/vllm-benchmark.Dockerfile'
               - 'scripts/standardize_vllm_benchmark.py'
               - 'eval/vllm-benchmark/**'
+              - 'configs/vllm_benchmark.yaml'
 
   build-vllm-benchmark:
     name: 🏗️ Build and Push VLLM Benchmark Image

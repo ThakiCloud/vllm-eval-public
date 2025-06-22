@@ -33,6 +33,7 @@ jobs:
               - 'eval/evalchemy/**'
               - 'datasets/**'
               - 'scripts/standardize_evalchemy.py'
+              - 'configs/evalchemy.json'
 
   build-evalchemy:
     name: 🏗️ Build and Push Evalchemy Image
