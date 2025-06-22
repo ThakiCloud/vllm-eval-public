@@ -54,7 +54,7 @@ jobs:
       - name: 🔍 Run hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: 'docker/**/*.Dockerfile'
+          dockerfile: 'docker/*.Dockerfile'
           no-fail: true
 
   markdown-lint:
