@@ -32,12 +32,24 @@ jobs:
       - name: 🐦 Install crane
         uses: imjasonh/setup-crane@v0.4
 
+      - name: 🔎 Find Latest Release Image
+        id: find_latest_image
+        run: |
+          IMAGE_NAME_LOWERCASE=${{ steps.set_lowercase_name.outputs.name }}
+          LATEST_RELEASE_TAG=$(crane ls ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE} | grep "release-" | sort -r | head -n 1)
+          if [ -z "$LATEST_RELEASE_TAG" ]; then
+            echo "Error: No release-* image found for ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}."
+            exit 1
+          fi
+          echo "Found latest release tag: $LATEST_RELEASE_TAG"
+          echo "latest_release_tag=${LATEST_RELEASE_TAG}" >> $GITHUB_OUTPUT
+
       - name: 🏷️ Tag Existing Image
         id: tag_image
         run: |
           VERSION_TAG=$(echo "${{ github.ref_name }}" | sed -E 's/^standard-evalchemy-(v.*)$/\1/')
           IMAGE_NAME_LOWERCASE=${{ steps.set_lowercase_name.outputs.name }}
-          SRC_IMAGE="${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${{ github.sha }}"
+          SRC_IMAGE="${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${{ steps.find_latest_image.outputs.latest_release_tag }}"
           
           echo "Tagging ${SRC_IMAGE} with ${VERSION_TAG}"
           crane tag "${SRC_IMAGE}" "${VERSION_TAG}"
