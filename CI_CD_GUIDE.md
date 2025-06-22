@@ -38,14 +38,15 @@ graph TD
     
     subgraph "Build Phase (Path-based)"
         E --> F{File Changes?}
-        F -- Yes --> G[Build & Push Image w/ SHA];
+        F -- Yes --> G[Build & Push Image w/ SHA + release-* Tag];
         F -- No --> H[Skip Build];
     end
 
     subgraph "Deployment Phase (Tag-based)"
-        I[Push Tag e.g. vllm-benchmark-v1.0.0] --> J[Re-tag Image w/ Version];
-        J --> K[Update Manifest Repo];
-        K --> L[GitOps Controller Deploys];
+        I[Push Tag e.g. vllm-benchmark-v1.0.0] --> J[Find latest 'release-*' image];
+        J --> K[Re-tag Image w/ Version];
+        K --> L[Update Manifest Repo];
+        L --> M[GitOps Controller Deploys];
     end
 
     CI --> C;
@@ -55,7 +56,7 @@ graph TD
 | 워크플로우 | 파일명 | 트리거 | 목적 |
 |------------|--------|--------|------|
 | **CI** | `ci.yml` | 브랜치 Push/PR | 코드 스타일 및 포맷 검증 (Linter) |
-| **Component Build** | `*-build.yml` | main 브랜치 머지 (파일 변경 시) | Docker 이미지 빌드 및 GHCR Push (SHA 태그) |
+| **Component Build** | `*-build.yml` | main 브랜치 머지 (파일 변경 시) | Docker 이미지 빌드 및 GHCR Push (SHA + `release-*` 태그) |
 | **Component Deploy** | `*-deploy.yml` | 컴포넌트별 Tag 생성 | GitOps 매니페스트 업데이트 (이미지 버전 태그) |
 | **Auto-merge** | `auto-merge.yml` | PR 승인 | GitHub Auto-merge 기능 활성화 |
 
@@ -86,7 +87,7 @@ graph TD
     1.  **파일 변경 감지**: `dorny/paths-filter`를 사용해 컴포넌트 관련 파일 변경 시에만 워크플로를 실행합니다.
     2.  **이미지 빌드 및 푸시**:
         - **Pull Request**: 이미지를 빌드만 수행하여 병합 전 코드의 빌드 가능성을 검증합니다. (푸시하지 않음)
-        - **Push to `main`**: 이미지를 빌드하고, 해당 커밋의 `SHA`를 태그로 사용하여 `ghcr.io` 컨테이너 레지스트리에 푸시합니다. 이 이미지는 '릴리스 후보' 역할을 합니다.
+        - **Push to `main`**: 이미지를 빌드하고, 두 개의 태그(`Commit SHA`, `release-타임스탬프`)를 사용하여 `ghcr.io`에 푸시합니다. `release-*` 태그가 붙은 이미지가 '릴리스 후보'가 됩니다.
 
 ### 3. GitOps 기반 배포 (Deploy) - `*-deploy.yml`
 배포는 명시적인 버전 릴리스를 통해 안정성을 확보합니다.
@@ -95,7 +96,7 @@ graph TD
 - **트리거**:
     - 컴포넌트별 버전 태그 `push` (예: `vllm-benchmark-v*.*.*`)
 - **주요 작업 (GitOps)**:
-    1.  **이미지 리태깅(Re-tagging)**: 새 이미지를 빌드하지 않고, `main` 브랜치에서 이미 생성된 `SHA` 태그 이미지를 찾아, 배포를 트리거한 버전 태그(예: `v1.2.3`)를 추가로 부여합니다. (`crane` 도구 사용)
+    1.  **이미지 리태깅(Re-tagging)**: 새 이미지를 빌드하지 않습니다. 대신 `ghcr.io` 레지스트리에서 `release-*` 형식의 태그가 붙은 가장 최신 이미지를 검색하여, 배포를 트리거한 버전 태그(예: `v1.2.3`)를 추가로 부여합니다. (`crane` 도구 사용) 이는 빌드와 배포 시점의 `main` 브랜치 커밋이 달라도 안정적으로 최신 빌드를 배포할 수 있게 합니다.
     2.  **매니페스트 업데이트**:
         - 별도의 매니페스트 저장소(`ThakiCloud/vllm-manifests-public`)를 체크아웃합니다.
         - 해당 컴포넌트의 쿠버네티스 매니페스트 파일 내의 이미지 태그를 새로 부여된 버전 태그로 업데이트합니다.
@@ -138,18 +139,18 @@ git push origin feature/new-logic
 ### ✅ 승인 및 머지
 
 1. **리뷰어 승인** → `Auto-merge` 워크플로우가 실행되어 자동 머지 활성화
-2. **`main` 브랜치 머지** → `vllm-benchmark-build` 워크플로우가 다시 실행되어, 이미지를 빌드하고 Commit SHA를 태그로 하여 `ghcr.io`에 푸시합니다.
+2. **`main` 브랜치 머지** → `vllm-benchmark-build` 워크플로우가 다시 실행되어, 이미지를 빌드하고 Commit SHA와 `release-*` 태그를 붙여 `ghcr.io`에 푸시합니다.
 
 ## 🚀 배포 프로세스
 
 ### 📦 컴포넌트 배포 (vllm-benchmark 예시)
 
 ```bash
-# 1. main 브랜치 최신화 및 배포할 커밋 확인
+# 1. main 브랜치 최신화
 git checkout main
 git pull origin main
 
-# 2. 배포할 커밋을 가리키는 태그 생성 및 푸시
+# 2. 배포할 버전을 위한 태그 생성 및 푸시
 # 형식: {컴포넌트명}-v{Major}.{Minor}.{Patch}
 git tag vllm-benchmark-v1.2.3
 git push origin vllm-benchmark-v1.2.3
@@ -167,9 +168,9 @@ git push origin vllm-benchmark-v1.2.3
 
 ### 🚀 배포 실패 대응
 
-- **"Image not found" 오류**:
-  1. `main` 브랜치에 해당 커밋이 정상적으로 머지되었는지 확인합니다.
-  2. `*-build.yml` 워크플로우가 성공적으로 실행되어 `ghcr.io`에 SHA 태그로 이미지를 푸시했는지 확인합니다.
+- **"Image not found" 또는 배포 실패**:
+  1. `main` 브랜치에 대한 `*-build.yml` 워크플로우가 성공적으로 실행되어 `ghcr.io`에 `release-*` 태그가 포함된 이미지를 푸시했는지 확인합니다.
+  2. `crane ls` 또는 GHCR UI를 통해 레지스트리에 배포하려는 컴포넌트의 `release-*` 이미지가 존재하는지 확인합니다.
 - **Manifest 업데이트 실패**:
   1. `*-deploy.yml` 워크플로우의 권한(`secrets.MANIFESTS_SECRET`)이 올바른지 확인합니다.
   2. `ThakiCloud/vllm-manifests-public` 리포지토리의 파일 경로가 올바른지 확인합니다.
