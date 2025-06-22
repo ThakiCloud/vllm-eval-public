@@ -33,7 +33,6 @@ jobs:
               - 'eval/evalchemy/**'
               - 'datasets/**'
               - 'scripts/standardize_evalchemy.py'
-              - 'configs/evalchemy.json'
 
   build-evalchemy:
     name: 🏗️ Build and Push Evalchemy Image
@@ -51,6 +50,11 @@ jobs:
       - name: ⚙️ Set lowercase image name
         id: set_lowercase_name
         run: echo "name=$(echo '${{ env.IMAGE_NAME }}-evalchemy' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: ⚙️ Generate release tag
+        if: github.event_name != 'pull_request'
+        id: generate_tag
+        run: echo "tag=release-$(date -u +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -71,7 +75,9 @@ jobs:
           file: ./docker/evalchemy.Dockerfile
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ github.sha }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ github.sha }}
+            ${{ github.event_name != 'pull_request' && format('{0}/{1}:{2}', env.REGISTRY, steps.set_lowercase_name.outputs.name, steps.generate_tag.outputs.tag) || '' }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -83,5 +89,6 @@ jobs:
         run: |
           echo "### ⚗️ Evalchemy Image Built and Pushed" >> $GITHUB_STEP_SUMMARY
           echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:**" >> $GITHUB_STEP_SUMMARY
-          echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ github.sha }}`" >> $GITHUB_STEP_SUMMARY 
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ github.sha }}`" >> $GITHUB_STEP_SUMMARY
+          echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.generate_tag.outputs.tag }}`" >> $GITHUB_STEP_SUMMARY 
