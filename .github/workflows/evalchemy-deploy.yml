@@ -30,7 +30,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🐦 Install crane
-        uses: imjasonh/setup-crane@v0.1
+        uses: imjasonh/setup-crane@v0.4
 
       - name: 🏷️ Tag Existing Image
         id: tag_image
