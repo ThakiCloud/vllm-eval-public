@@ -554,7 +554,6 @@ terraform.tfvars.json
 *.feather
 *.tsv
 data/
-datasets/
 raw_data/
 processed_data/
 

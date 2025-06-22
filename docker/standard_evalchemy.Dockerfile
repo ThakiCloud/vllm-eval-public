@@ -55,8 +55,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # 평가 시스템 파일 복사
 COPY datasets/ /app/datasets/
-COPY eval/ /app/eval/
-COPY scripts/ /app/scripts/
+COPY eval/standard_evalchemy/ /app/eval/standard_evalchemy/
+COPY scripts/standardize_evalchemy.py /app/scripts/standardize_evalchemy.py
+COPY configs/standard_evalchemy.json /app/configs/standard_evalchemy.json
 
 # 스크립트 실행 권한 부여
 RUN chmod +x /app/eval/standard_evalchemy/run_evalchemy.sh && \
@@ -74,7 +75,7 @@ RUN useradd --create-home --shell /bin/bash evaluser && \
 USER evaluser
 
 # 기본 환경 변수
-ENV EVAL_CONFIG_PATH="/app/eval/standard_evalchemy/configs/eval_config.json" \
+ENV EVAL_CONFIG_PATH="/app/configs/standard_evalchemy.json" \
     VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
     OUTPUT_DIR="/app/eval/standard_evalchemy/results" \
     LOG_LEVEL="INFO" \

@@ -44,8 +44,9 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/benchmarks /app/benchmarks
 
-COPY configs/ /app/configs/
-COPY scripts/ /app/scripts/
+COPY configs/vllm_benchmark.yaml /app/configs/vllm_benchmark.yaml
+COPY eval/vllm-benchmark/ /app/scripts/
+COPY scripts/standardize_vllm_benchmark.py /app/scripts/standardize_vllm_benchmark.py
 
 RUN cp /app/scripts/*.sh /app/ && \
     cp /app/scripts/*.py /app/ && \
