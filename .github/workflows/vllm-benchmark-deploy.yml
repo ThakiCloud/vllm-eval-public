@@ -3,7 +3,7 @@ name: 🚀 Deploy VLLM Benchmark
 on:
   push:
     tags:
-      - 'vllm-benchmark:v*.*.*'
+      - 'vllm-benchmark-v*.*.*'
 
 env:
   REGISTRY: ghcr.io
@@ -35,7 +35,7 @@ jobs:
       - name: 🏷️ Tag Existing Image
         id: tag_image
         run: |
-          VERSION_TAG=$(echo "${{ github.ref_name }}" | sed -E 's/^vllm-benchmark:(v.*)$/\1/')
+          VERSION_TAG=$(echo "${{ github.ref_name }}" | sed -E 's/^vllm-benchmark-(v.*)$/\1/')
           IMAGE_NAME_LOWERCASE=${{ steps.set_lowercase_name.outputs.name }}
           SRC_IMAGE="${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${{ github.sha }}"
           
