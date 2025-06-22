@@ -1,0 +1,81 @@
+name: 🚀 Deploy VLLM Benchmark
+
+on:
+  push:
+    tags:
+      - 'vllm-benchmark-v*.*.*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy-vllm-benchmark:
+    name: 🚀 Deploy VLLM Benchmark to Production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: ⚙️ Set lowercase image name
+        id: set_lowercase_name
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}-vllm-benchmark' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: 🔑 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐦 Install crane
+        uses: imjasonh/setup-crane@v0.1
+
+      - name: 🏷️ Tag Existing Image
+        id: tag_image
+        run: |
+          VERSION_TAG=$(echo "${{ github.ref_name }}" | sed -E 's/^vllm-benchmark-(v.*)$/\1/')
+          IMAGE_NAME_LOWERCASE=${{ steps.set_lowercase_name.outputs.name }}
+          SRC_IMAGE="${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${{ github.sha }}"
+          
+          echo "Tagging ${SRC_IMAGE} with ${VERSION_TAG}"
+          crane tag "${SRC_IMAGE}" "${VERSION_TAG}"
+          
+          echo "new_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
+
+      - name: 📥 Checkout Manifest Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ThakiCloud/vllm-manifests-public
+          token: ${{ secrets.MANIFESTS_SECRET }}
+          ref: main
+
+      - name: 📝 Update Image Tag in Manifest
+        run: |
+          IMAGE_NAME_LOWERCASE=${{ steps.set_lowercase_name.outputs.name }}
+          MANIFEST_FILE=vllm-eval/vllm-benchmark-job.yaml
+          
+          echo "Updating image in $MANIFEST_FILE to ${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${{ steps.tag_image.outputs.new_tag }}"
+          
+          if [ -f "$MANIFEST_FILE" ]; then
+            sed -E "s|(image:\s*).*$|\1${{ env.REGISTRY }}/${IMAGE_NAME_LOWERCASE}:${{ steps.tag_image.outputs.new_tag }}|" -i $MANIFEST_FILE
+          else
+            echo "Error: Manifest file $MANIFEST_FILE not found."
+            exit 1
+          fi
+
+      - name: 🚀 Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "CI: update vllm-benchmark image to ${{ github.ref_name }} (${{ github.sha }})"
+          branch: main
+          commit_options: '--no-verify'
+          commit_user_name: 'yunjae-park1111'
+          commit_user_email: 'yunjae.park@thakicloud.co.kr'
+
+      - name: ✅ Deployment Summary
+        run: |
+          echo "### 🚀 VLLM Benchmark Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** `${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.tag_image.outputs.new_tag }}`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggering Tag:** `${{ github.ref_name }}`" >> $GITHUB_STEP_SUMMARY 

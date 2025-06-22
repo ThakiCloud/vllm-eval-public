@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: evalchemy
+  name: standard-evalchemy
   labels:
     app: vllm-eval
 spec:
@@ -20,7 +20,7 @@ spec:
       imagePullSecrets:
       - name: ghcr-secret
       containers:
-        - name: evalchemy
+        - name: standard-evalchemy
           image: your-images:latest
           imagePullPolicy: Always
           
@@ -34,14 +34,14 @@ spec:
             - "--endpoint"
             - "$(VLLM_MODEL_ENDPOINT)"
             - "--config"
-            - "/app/configs/evalchemy.json"
+            - "/app/configs/standard_evalchemy.json"
           
           # 결과 저장용 볼륨
           volumeMounts:
             - name: model-results-storage
-              mountPath: /app/eval/evalchemy/results
+              mountPath: /app/eval/standard_evalchemy/results
             - name: parsed-results-storage
-              mountPath: /app/eval/evalchemy/parsed
+              mountPath: /app/eval/standard_evalchemy/parsed
       
       volumes:
         # 호스트 경로 사용 (개발/테스트용)

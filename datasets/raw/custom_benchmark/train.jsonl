@@ -1,0 +1,5 @@
+{"question": "한국의 수도는 어디인가요?", "answer": "서울", "context": "한국은 동아시아에 위치한 국가입니다.", "category": "geography", "difficulty": "easy"}
+{"question": "파이썬에서 리스트를 정렬하는 방법은?", "answer": "sort() 메서드나 sorted() 함수를 사용합니다.", "context": "파이썬은 다양한 정렬 방법을 제공합니다.", "category": "programming", "difficulty": "medium"}
+{"question": "지구에서 가장 큰 대륙은?", "answer": "아시아", "context": "지구는 7개의 대륙으로 구성되어 있습니다.", "category": "geography", "difficulty": "easy"}
+{"question": "HTTP와 HTTPS의 차이점은?", "answer": "HTTPS는 HTTP에 SSL/TLS 암호화가 추가된 프로토콜입니다.", "context": "웹 통신에서 보안은 매우 중요합니다.", "category": "technology", "difficulty": "medium"}
+{"question": "셰익스피어의 대표작은?", "answer": "햄릿, 로미오와 줄리엣, 맥베스 등이 있습니다.", "context": "셰익스피어는 영국의 대표적인 극작가입니다.", "category": "literature", "difficulty": "medium"}

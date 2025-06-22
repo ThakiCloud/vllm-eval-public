@@ -43,7 +43,7 @@ NC='\033[0m' # No Color
 #
 
 # Default values
-DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/configs/eval_config.json"
+DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/standard_evalchemy.json"
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/results"
 DEFAULT_GPU_DEVICE="0"
 DEFAULT_BATCH_SIZE="8"
@@ -705,6 +705,10 @@ main() {
     # Set up signal handlers
     trap cleanup EXIT INT TERM
     
+    # Store the original working directory
+    local initial_pwd
+    initial_pwd=$(pwd)
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -714,10 +718,18 @@ main() {
                 ;;
             -c|--config)
                 EVAL_CONFIG_PATH="$2"
+                # If path is relative, make it absolute from the original CWD
+                if [[ ! "$EVAL_CONFIG_PATH" =~ ^/ && -n "$initial_pwd" ]]; then
+                    EVAL_CONFIG_PATH="$initial_pwd/$EVAL_CONFIG_PATH"
+                fi
                 shift 2
                 ;;
             -o|--output)
                 OUTPUT_DIR="$2"
+                # If path is relative, make it absolute from the original CWD
+                if [[ ! "$OUTPUT_DIR" =~ ^/ && -n "$initial_pwd" ]]; then
+                    OUTPUT_DIR="$initial_pwd/$OUTPUT_DIR"
+                fi
                 RESULTS_DIR="${OUTPUT_DIR}/${RUN_ID}"
                 LOG_FILE="${RESULTS_DIR}/evalchemy_${RUN_ID}.log"
                 ERROR_LOG="${RESULTS_DIR}/evalchemy_errors_${RUN_ID}.log"
@@ -811,6 +823,10 @@ main() {
         exit 1
     fi
     
+    # Change to the parent directory of the script
+    cd "$SCRIPT_DIR" || exit 1
+    log INFO "Changed working directory to $(pwd)"
+
     # Pre-flight checks
     check_dependencies || exit 1
     validate_config "$EVAL_CONFIG_PATH" || exit 1

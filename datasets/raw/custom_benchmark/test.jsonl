@@ -1,0 +1,3 @@
+{"question": "일본의 수도는 어디인가요?", "answer": "도쿄", "context": "일본은 동아시아의 섬나라입니다.", "category": "geography", "difficulty": "easy"}
+{"question": "자바스크립트에서 배열을 정렬하는 방법은?", "answer": "sort() 메서드를 사용합니다.", "context": "자바스크립트는 웹 개발의 핵심 언어입니다.", "category": "programming", "difficulty": "medium"}
+{"question": "세계에서 가장 긴 강은?", "answer": "나일강", "context": "강은 지구의 중요한 수자원입니다.", "category": "geography", "difficulty": "medium"}

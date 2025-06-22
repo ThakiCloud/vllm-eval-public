@@ -33,7 +33,8 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 
 # 평가 시스템 파일 복사 (설정과 태스크 포함)
 COPY datasets/ /app/datasets/
-COPY eval/ /app/eval/
+COPY eval/evalchemy/ /app/eval/evalchemy/
+COPY configs/evalchemy.json /app/configs/evalchemy.json
 COPY scripts/standardize_evalchemy.py /app/scripts/standardize_evalchemy.py
 
 # run_evalchemy.sh 실행 권한 부여
@@ -46,7 +47,7 @@ RUN useradd --create-home --shell /bin/bash evaluser && \
 USER evaluser
 
 # 기본 환경 변수
-ENV EVAL_CONFIG_PATH="/app/eval/evalchemy/configs/eval_config.json" \
+ENV EVAL_CONFIG_PATH="/app/configs/evalchemy.json" \
     VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
     LOG_LEVEL="INFO"
 
