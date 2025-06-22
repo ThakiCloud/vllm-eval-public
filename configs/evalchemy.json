@@ -1,0 +1,62 @@
+{
+  "description": "VLLM Evaluation Configuration for qwen3-8b - Generation Only",
+  "version": "1.2",
+  "last_updated": "2024-06-13",
+  
+  "model_configs": {
+    "default": {
+      "max_length": 2048,
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "num_beams": 1,
+      "do_sample": false
+    }
+  },
+  
+  "generation_kwargs": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_tokens": 100
+  },
+  
+  "benchmarks": {
+    "custom_task_1": {
+      "enabled": true,
+      "tasks": ["custom_task_1"],
+      "num_fewshot": 3,
+      "batch_size": 4,
+      "device": "cuda",
+      "limit": 5,
+      "description": "Custom Task 1 - Question answering evaluation",
+      "metrics": ["exact_match"],
+      "output_path": "results/custom_task_1",
+      "log_samples": true,
+      "priority": "high"
+    },
+    
+    "custom_task_2": {
+      "enabled": true,
+      "tasks": ["custom_task_2"],
+      "num_fewshot": 3,
+      "batch_size": 4,
+      "device": "cuda",
+      "limit": 5,
+      "description": "Custom Task 2 - Question answering with context",
+      "metrics": ["exact_match"],
+      "output_path": "results/custom_task_2",
+      "log_samples": true,
+      "priority": "high"
+    }
+  },
+  
+  "profiles": {
+    "custom_only": {
+      "description": "Custom benchmark tasks only",
+      "benchmarks": ["custom_task_1", "custom_task_2"],
+      "priority": "high",
+      "required": true
+    }
+  },
+  
+  "active_profile": "custom_only"
+}
