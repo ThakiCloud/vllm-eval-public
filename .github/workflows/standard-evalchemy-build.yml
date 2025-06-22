@@ -33,6 +33,7 @@ jobs:
               - 'eval/standard_evalchemy/**'
               - 'scripts/standardize_evalchemy.py'
               - 'configs/standard_evalchemy.json'
+              - '.github/workflows/**'
 
   build-standard-evalchemy:
     name: 🏗️ Build and Push Standard Evalchemy Image

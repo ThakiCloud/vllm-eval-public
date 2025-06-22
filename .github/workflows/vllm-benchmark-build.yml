@@ -33,6 +33,7 @@ jobs:
               - 'scripts/standardize_vllm_benchmark.py'
               - 'eval/vllm-benchmark/**'
               - 'configs/vllm_benchmark.yaml'
+              - '.github/workflows/**'
 
   build-vllm-benchmark:
     name: 🏗️ Build and Push VLLM Benchmark Image
