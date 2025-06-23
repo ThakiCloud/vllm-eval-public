@@ -64,8 +64,7 @@ def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str 
     }
 
     # --- Results 데이터 추출 ---
-    results_data = data.get("results", {}).get(benchmark_name, {})
-    results_data.pop("alias", None) # 'alias' 키는 필요 없으므로 제거
+    results_data = data.get("results", {})
 
     # --- Performance 데이터 추출 ---
     performance = {
