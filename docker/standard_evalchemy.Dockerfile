@@ -1,11 +1,11 @@
-# VLLM Evaluation Container (Standard Evalchemy)
-# 표준 Evalchemy 평가를 위한 컨테이너
+# VLLM Evaluation Container (Evalchemy)
+# Evalchemy 평가를 위한 컨테이너
 FROM python:3.11-slim
 
 # 메타데이터
 LABEL maintainer="VLLM Eval Team"
-LABEL description="VLLM standard evalchemy evaluation container with enhanced debugging"
-LABEL version="2.0.0"
+LABEL description="VLLM evalchemy evaluation container with ThakiCloud/evalchemy fork"
+LABEL version="2.1.0"
 
 # 환경 변수 설정
 ENV PYTHONUNBUFFERED=1 \
@@ -14,13 +14,20 @@ ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     TOKENIZERS_PARALLELISM=false
 
-# 시스템 패키지 설치 (디버깅 도구 추가)
+# 시스템 패키지 설치 (evalchemy와 vllm 빌드에 필요한 도구들 포함)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     git \
     jq \
     build-essential \
+    python3-dev \
+    cmake \
+    ninja-build \
+    pkg-config \
+    libssl-dev \
+    libffi-dev \
+    libnuma-dev \
     vim \
     less \
     htop \
@@ -28,106 +35,133 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     net-tools \
     && rm -rf /var/lib/apt/lists/*
 
-# 작업 디렉토리 생성
+# 비특권 사용자 생성 및 HOME 디렉토리 설정
+RUN groupadd -r evaluser && useradd -r -g evaluser -m -d /home/evaluser evaluser
+
 WORKDIR /app
 
-# Python 의존성 파일 복사 및 설치
-COPY requirements-dev.txt /app/requirements-dev.txt
+# requirements-dev.txt가 있다면 복사
+COPY requirements-dev.txt* /app/
 
-# Python 패키지 설치 (lm-eval 최신 버전과 추가 패키지)
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements-dev.txt && \
-    pip install --no-cache-dir \
-        lm-eval[api] \
-        openai \
-        anthropic \
-        torch \
-        transformers \
-        accelerate \
-        datasets \
-        huggingface-hub \
-        tokenizers \
-        numpy \
-        scipy \
-        scikit-learn \
-        requests \
-        aiohttp
+# IPython 버전을 제한하여 호환성 문제 해결
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install "IPython<8.0.0"
 
-# 평가 시스템 파일 복사
-COPY datasets/ /app/datasets/
-COPY eval/standard_evalchemy/ /app/eval/standard_evalchemy/
-COPY scripts/standardize_evalchemy.py /app/scripts/standardize_evalchemy.py
-COPY configs/standard_evalchemy.json /app/configs/standard_evalchemy.json
+# 기본 패키지들 설치 (requirements-dev.txt가 있다면)
+RUN if [ -f requirements-dev.txt ]; then pip install --no-cache-dir -r requirements-dev.txt; fi
 
-# 스크립트 실행 권한 부여
-RUN chmod +x /app/eval/standard_evalchemy/run_evalchemy.sh && \
-    chmod +x /app/scripts/*.py 2>/dev/null || true
+# torch와 vllm 설치
+RUN pip install --no-cache-dir torch
+RUN pip install --no-cache-dir vllm
 
-# 결과 디렉토리 생성
-RUN mkdir -p /app/eval/standard_evalchemy/results && \
-    mkdir -p /app/logs
+# evalchemy 소스 클론 및 설치
+ARG CACHEBUST=1
+RUN echo "Caching disabled at: $CACHEBUST" \
+    && rm -rf evalalchemy-src \
+    && git clone --recurse-submodules https://github.com/ThakiCloud/evalchemy.git /app/evalchemy-src
 
-# 비root 사용자 생성 및 권한 설정
-RUN useradd --create-home --shell /bin/bash evaluser && \
-    chown -R evaluser:evaluser /app && \
-    usermod -aG staff evaluser
+RUN echo "==================== AIME24 DEBUG START ====================" && \
+    if [ -f /app/evalchemy-src/eval/chat_benchmarks/AIME24/data/aime24.json ]; then \
+        echo "FILE FOUND: aime24.json" && \
+        wc -l /app/evalchemy-src/eval/chat_benchmarks/AIME24/data/aime24.json && \
+        head -10 /app/evalchemy-src/eval/chat_benchmarks/AIME24/data/aime24.json && \
+        echo "... (truncated)" && \
+        tail -5 /app/evalchemy-src/eval/chat_benchmarks/AIME24/data/aime24.json ; \
+    else \
+        echo "FILE NOT FOUND: aime24.json" && \
+        find /app/evalchemy-src -name "*.json" | grep -i aime || echo "No AIME JSON files found" ; \
+    fi && \
+    echo "==================== AIME24 DEBUG END ======================"
 
+# 작업 디렉토리를 evalchemy 소스로 변경
+WORKDIR /app/evalchemy-src
+
+# 문제가 되는 pyext 의존성 주석 처리
+RUN sed -i 's|.*penfever/PyExt.*|# &|' pyproject.toml
+
+# evalchemy 설치 (--no-deps로 의존성 충돌 방지)
+RUN pip install --no-cache-dir --no-deps -e .
+
+# 필요한 추가 의존성들 개별 설치
+RUN pip install --no-cache-dir --no-deps -e eval/chat_benchmarks/alpaca_eval
+
+# 필요한 추가 의존성들 개별 설치
+RUN pip install --no-cache-dir datasets transformers accelerate
+
+# bespokelabs curator 패키지 설치 (curator_lm.py에서 필요)
+RUN pip install --no-cache-dir bespokelabs-curator
+
+# 평가 설정 파일들을 올바른 위치에 복사
+COPY eval/ /app/eval/
+RUN mkdir -p /app/evalchemy-src/configs
+RUN cp -r /app/eval/standard_evalchemy/configs/* /app/evalchemy-src/configs/ 2>/dev/null || true
+
+# 디렉토리 권한 설정
+RUN chown -R evaluser:evaluser /app /home/evaluser
+
+# 비특권 사용자로 전환
 USER evaluser
 
-# 기본 환경 변수
-ENV EVAL_CONFIG_PATH="/app/configs/standard_evalchemy.json" \
+# 기본 환경 변수 설정
+ENV EVAL_CONFIG_PATH="/app/evalchemy-src/configs/eval_config.json" \
     VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
-    OUTPUT_DIR="/app/eval/standard_evalchemy/results" \
-    LOG_LEVEL="INFO" \
+    OUTPUT_DIR="/app/evalchemy-src/results" \
     BATCH_SIZE="1" \
-    MAX_LENGTH="2048" \
-    TEMPERATURE="0.0" \
-    TOP_P="1.0" \
-    GPU_DEVICE="cpu"
+    MAX_TOKENS="14000" \
+    NUM_FEWSHOT="1" \
+    LIMIT="1" \
+    LOG_LEVEL="INFO" \
+    PYTHONPATH="/app/evalchemy-src:/app"
 
-# 작업 디렉토리를 standard_evalchemy로 설정
-WORKDIR /app/eval/standard_evalchemy
+# 헬스체크 설정
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD python -c "import eval.eval; print('evalchemy healthy')" || exit 1
 
-# 헬스체크 추가
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+# 실행 스크립트 권한 설정 및 기본 명령어
+RUN chmod +x /app/eval/standard_evalchemy/run_evalchemy.sh
 
-# 기본 실행 명령 (환경변수와 기본 config 사용)
-ENTRYPOINT ["./run_evalchemy.sh"]
-CMD []
+# ENTRYPOINT와 CMD 설정 - 인자 전달 가능하도록
+ENTRYPOINT ["/app/eval/standard_evalchemy/run_evalchemy.sh"]
+CMD ["--help"]
 
+#
+# Example docker run command:
+# docker run --rm \
+#   -v $(pwd)/results:/app/evalchemy-src/results \
+#   -e VLLM_MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
+#   -e LOG_LEVEL="DEBUG" \
+#   evalchemy-runner
 #
 # 빌드 및 실행 명령어들:
 #
 # 1. 이미지 빌드:
-# docker build -f docker/standard_evalchemy.Dockerfile -t vllm-eval/standard-evalchemy:latest .
+# docker build --build-arg CACHEBUST="$(date +%s)" -f docker/evalchemy.Dockerfile -t vllm-eval/evalchemy:latest .
 #
 # 2. 기본 실행 (결과를 호스트에 마운트):
 # docker run --rm \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
 #   -e VLLM_MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
 #   -e LOG_LEVEL="DEBUG" \
-#   vllm-eval/standard-evalchemy:latest
+#   vllm-eval/evalchemy:latest
 #
 # 3. 네트워크 모드로 실행 (VLLM 서버와 직접 연결):
 # docker run --rm \
 #   --network host \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
 #   -e VLLM_MODEL_ENDPOINT="http://localhost:8000/v1/completions" \
-#   vllm-eval/standard-evalchemy:latest
+#   vllm-eval/evalchemy:latest
 #
 # 4. 디버깅 모드 (인터랙티브):
 # docker run --rm -it \
 #   --entrypoint /bin/bash \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
-#   vllm-eval/standard-evalchemy:latest
+#   vllm-eval/evalchemy:latest
 #
 # 5. 설정 검증만 실행:
 # docker run --rm \
-#   vllm-eval/standard-evalchemy:latest --validate-config
+#   vllm-eval/evalchemy:latest --validate-config
 #
 # 6. 사용 가능한 벤치마크 목록 확인:
 # docker run --rm \
-#   vllm-eval/standard-evalchemy:latest --list-benchmarks
+#   vllm-eval/evalchemy:latest --list-benchmarks
 #
-

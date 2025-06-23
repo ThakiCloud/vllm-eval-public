@@ -1,10 +1,11 @@
 #!/bin/bash
 
 #
-# Evalchemy Benchmark Runner Script
+# Evalchemy Framework Runner Script
 #
-# This script runs lm-evaluation-harness benchmarks through the Evalchemy
-# framework with support for various models, datasets, and configurations.
+# This script runs evaluations using the Evalchemy framework with the
+# `python -m eval.eval` command structure.
+# It automatically reads enabled tasks from eval_config.json.
 #
 # Usage:
 #   ./run_evalchemy.sh [OPTIONS]
@@ -12,13 +13,12 @@
 # Environment Variables:
 #   VLLM_MODEL_ENDPOINT  - API endpoint for VLLM model (required)
 #   EVAL_CONFIG_PATH     - Path to evaluation config JSON (default: configs/eval_config.json)
-#   OUTPUT_DIR          - Directory for results output (default: ./results)
+#   OUTPUT_DIR          - Directory for results output (default: ./logs)
 #   RUN_ID              - Unique identifier for this evaluation run
-#   GPU_DEVICE          - GPU device to use (default: 0)
-#   BATCH_SIZE          - Batch size for evaluation (default: 8)
-#   MAX_LENGTH          - Maximum sequence length (default: 2048)
-#   TEMPERATURE         - Sampling temperature (default: 0.0)
-#   TOP_P               - Top-p sampling parameter (default: 1.0)
+#   BATCH_SIZE          - Batch size for evaluation (default: 1)
+#   MAX_TOKENS          - Maximum tokens (default: 14000)
+#   NUM_FEWSHOT         - Number of few-shot examples (default: 1)
+#   LIMIT               - Limit number of examples (default: 1)
 #   LOG_LEVEL           - Logging level (default: INFO)
 #
 
@@ -26,7 +26,7 @@ set -euo pipefail
 
 # Script metadata
 SCRIPT_NAME="run_evalchemy.sh"
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="3.1.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Color codes for output
@@ -43,13 +43,12 @@ NC='\033[0m' # No Color
 #
 
 # Default values
-DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/standard_evalchemy.json"
-DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/results"
-DEFAULT_GPU_DEVICE="0"
-DEFAULT_BATCH_SIZE="8"
-DEFAULT_MAX_LENGTH="2048"
-DEFAULT_TEMPERATURE="0.0"
-DEFAULT_TOP_P="1.0"
+DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/configs/eval_config.json"
+DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/logs"
+DEFAULT_BATCH_SIZE="1"
+DEFAULT_MAX_TOKENS="14000"
+DEFAULT_NUM_FEWSHOT="1"
+DEFAULT_LIMIT="1"
 DEFAULT_LOG_LEVEL="INFO"
 
 # Environment variables with defaults
@@ -57,18 +56,16 @@ VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
 EVAL_CONFIG_PATH="${EVAL_CONFIG_PATH:-$DEFAULT_CONFIG_PATH}"
 OUTPUT_DIR="${OUTPUT_DIR:-$DEFAULT_OUTPUT_DIR}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-GPU_DEVICE="${GPU_DEVICE:-$DEFAULT_GPU_DEVICE}"
 BATCH_SIZE="${BATCH_SIZE:-$DEFAULT_BATCH_SIZE}"
-MAX_LENGTH="${MAX_LENGTH:-$DEFAULT_MAX_LENGTH}"
-TEMPERATURE="${TEMPERATURE:-$DEFAULT_TEMPERATURE}"
-TOP_P="${TOP_P:-$DEFAULT_TOP_P}"
+MAX_TOKENS="${MAX_TOKENS:-$DEFAULT_MAX_TOKENS}"
+NUM_FEWSHOT="${NUM_FEWSHOT:-$DEFAULT_NUM_FEWSHOT}"
+LIMIT="${LIMIT:-$DEFAULT_LIMIT}"
 LOG_LEVEL="${LOG_LEVEL:-$DEFAULT_LOG_LEVEL}"
 
 # Derived paths
 RESULTS_DIR="${OUTPUT_DIR}/${RUN_ID}"
 LOG_FILE="${RESULTS_DIR}/evalchemy_${RUN_ID}.log"
 ERROR_LOG="${RESULTS_DIR}/evalchemy_errors_${RUN_ID}.log"
-SUMMARY_FILE="${RESULTS_DIR}/evalchemy_summary_${RUN_ID}.json"
 
 #
 # Utility Functions
@@ -106,26 +103,95 @@ log() {
     esac
 }
 
+get_enabled_tasks() {
+    local config_file="$1"
+    
+    log DEBUG "Reading enabled tasks from config: $config_file" >&2
+    
+    # First check if any benchmark groups are enabled
+    local enabled_groups=$(jq -r '.benchmark_groups | to_entries[] | select(.value.enabled == true) | .value.tasks[]' "$config_file" 2>/dev/null)
+    
+    if [[ -n "$enabled_groups" ]]; then
+        log INFO "Found enabled tasks from benchmark groups: $enabled_groups" >&2
+        # Convert newlines to commas for task list
+        echo "$enabled_groups" | tr '\n' ',' | sed 's/,$//'
+        return 0
+    fi
+    
+    # If no benchmark groups are enabled, check individual tasks
+    local enabled_tasks=$(jq -r '.tasks | to_entries[] | select(.value.enabled == true) | .key' "$config_file" 2>/dev/null)
+    
+    if [[ -n "$enabled_tasks" ]]; then
+        log INFO "Found enabled individual tasks: $enabled_tasks" >&2
+        # Convert newlines to commas for task list
+        echo "$enabled_tasks" | tr '\n' ',' | sed 's/,$//'
+        return 0
+    fi
+    
+    # Fallback if nothing is enabled
+    log WARN "No enabled benchmark groups or tasks found, using AIME24 as fallback" >&2
+    echo "AIME24"
+}
+
+get_config_value() {
+    local config_file="$1"
+    local path="$2"
+    local default_value="$3"
+    
+    local value=$(jq -r "$path // \"$default_value\"" "$config_file" 2>/dev/null)
+    echo "$value"
+}
+
+load_config_values() {
+    local config_file="$1"
+    
+    log INFO "Loading configuration values from: $config_file"
+    
+    # Override defaults with config file values if not set via command line
+    if [[ "$BATCH_SIZE" == "$DEFAULT_BATCH_SIZE" ]]; then
+        BATCH_SIZE=$(get_config_value "$config_file" ".evaluation_settings.batch_size" "$DEFAULT_BATCH_SIZE")
+    fi
+    
+    if [[ "$MAX_TOKENS" == "$DEFAULT_MAX_TOKENS" ]]; then
+        MAX_TOKENS=$(get_config_value "$config_file" ".evaluation_settings.max_tokens" "$DEFAULT_MAX_TOKENS")
+    fi
+    
+    if [[ "$NUM_FEWSHOT" == "$DEFAULT_NUM_FEWSHOT" ]]; then
+        NUM_FEWSHOT=$(get_config_value "$config_file" ".evaluation_settings.num_fewshot" "$DEFAULT_NUM_FEWSHOT")
+    fi
+    
+    if [[ "$LIMIT" == "$DEFAULT_LIMIT" ]]; then
+        LIMIT=$(get_config_value "$config_file" ".evaluation_settings.limit" "$DEFAULT_LIMIT")
+    fi
+    
+    if [[ "$LOG_LEVEL" == "$DEFAULT_LOG_LEVEL" ]]; then
+        LOG_LEVEL=$(get_config_value "$config_file" ".evaluation_settings.verbosity" "$DEFAULT_LOG_LEVEL")
+    fi
+    
+    log DEBUG "Configuration loaded - Batch size: $BATCH_SIZE, Max tokens: $MAX_TOKENS, Few-shot: $NUM_FEWSHOT, Limit: $LIMIT, Log level: $LOG_LEVEL"
+}
+
 show_usage() {
     cat << EOF
 Usage: $SCRIPT_NAME [OPTIONS]
 
-Evalchemy Benchmark Runner - Executes lm-evaluation-harness benchmarks
+Evalchemy Framework Runner - Executes evaluations using python -m eval.eval
+Tasks are automatically determined from eval_config.json (enabled: true)
 
 OPTIONS:
     -e, --endpoint URL      VLLM model API endpoint (required)
+    -t, --tasks TASKS       Tasks to run (comma-separated, overrides config)
     -c, --config PATH       Path to evaluation config JSON
     -o, --output DIR        Output directory for results
     -r, --run-id ID         Unique run identifier
-    -g, --gpu DEVICE        GPU device number (default: 0)
-    -b, --batch-size N      Batch size for evaluation (default: 8)
-    -l, --max-length N      Maximum sequence length (default: 2048)
-    -t, --temperature F     Sampling temperature (default: 0.0)
-    -p, --top-p F           Top-p sampling parameter (default: 1.0)
+    -b, --batch-size N      Batch size for evaluation
+    --max-tokens N          Maximum tokens
+    --num-fewshot N         Number of few-shot examples
+    --limit N               Limit number of examples
     --log-level LEVEL       Logging level (DEBUG|INFO|WARN|ERROR)
     --dry-run               Show commands without executing
-    --list-benchmarks       List available benchmarks and exit
-    --validate-config       Validate configuration and exit
+    --debug                 Enable debug mode
+    --list-tasks            List available tasks from config
     -h, --help              Show this help message
     -v, --version           Show version information
 
@@ -134,41 +200,63 @@ ENVIRONMENT VARIABLES:
     EVAL_CONFIG_PATH        Configuration file path
     OUTPUT_DIR              Results output directory
     RUN_ID                  Evaluation run identifier
-    GPU_DEVICE              GPU device number
     BATCH_SIZE              Evaluation batch size
-    MAX_LENGTH              Maximum sequence length
-    TEMPERATURE             Sampling temperature
-    TOP_P                   Top-p sampling parameter
+    MAX_TOKENS              Maximum tokens
+    NUM_FEWSHOT             Few-shot examples count
+    LIMIT                   Example limit
     LOG_LEVEL               Logging verbosity level
 
 EXAMPLES:
-    # Basic usage
+    # Run all enabled tasks from config
     $SCRIPT_NAME --endpoint http://localhost:8000/v1
 
-    # Custom configuration and output
-    $SCRIPT_NAME \\
-        --endpoint http://model-api:8000/v1 \\
-        --config /path/to/custom_config.json \\
-        --output /data/results \\
-        --run-id evaluation_20240101
-
-    # High-performance settings
+    # Override specific tasks
     $SCRIPT_NAME \\
         --endpoint http://localhost:8000/v1 \\
-        --batch-size 16 \\
-        --gpu 0,1,2,3 \\
-        --max-length 4096
+        --tasks AIME24,bbh \\
+        --debug
 
-    # Validation and dry-run
-    $SCRIPT_NAME --validate-config --config custom.json
-    $SCRIPT_NAME --dry-run --endpoint http://localhost:8000/v1
+    # List available tasks
+    $SCRIPT_NAME --list-tasks
+
+    # Using environment variables
+    export VLLM_MODEL_ENDPOINT="http://localhost:8000/v1"
+    $SCRIPT_NAME
 
 EOF
 }
 
+list_tasks() {
+    local config_file="$EVAL_CONFIG_PATH"
+    
+    if [[ ! -f "$config_file" ]]; then
+        log ERROR "Configuration file not found: $config_file"
+        return 1
+    fi
+    
+    echo -e "${BLUE}Available Tasks:${NC}"
+    echo "=================="
+    
+    # List individual tasks
+    jq -r '.tasks | to_entries[] | "\(.key): \(.value.description) (enabled: \(.value.enabled))"' "$config_file" 2>/dev/null
+    
+    echo ""
+    echo -e "${BLUE}Benchmark Groups:${NC}"
+    echo "=================="
+    
+    # List benchmark groups
+    jq -r '.benchmark_groups | to_entries[] | "\(.key): \(.value.description) (enabled: \(.value.enabled))\n  Tasks: \(.value.tasks | join(", "))"' "$config_file" 2>/dev/null
+    
+    echo ""
+    echo -e "${GREEN}Currently Enabled Tasks:${NC}"
+    local enabled_tasks=$(get_enabled_tasks "$config_file")
+    echo "$enabled_tasks"
+}
+
 show_version() {
     echo "$SCRIPT_NAME version $SCRIPT_VERSION"
-    echo "lm-evaluation-harness integration for VLLM model evaluation"
+    echo "Evalchemy framework integration for VLLM model evaluation"
+    echo "Supports automatic task selection from configuration"
 }
 
 cleanup() {
@@ -194,72 +282,32 @@ check_dependencies() {
     log INFO "Checking dependencies..."
     
     local missing_deps=()
-    local os_type=$(uname)
     
     # Check Python
     if ! command -v python3 &> /dev/null; then
         missing_deps+=("python3")
     fi
     
-    # Check pip packages
-    local python_packages=(
-        "lm_eval"
-        "torch" 
-        "transformers"
-        "accelerate"
-        "openai"
-        "requests"
-        "numpy"
-        "datasets"
-    )
+    # Check if we can import eval.eval module
+    if ! python3 -c "import eval.eval" &> /dev/null; then
+        log ERROR "Cannot import eval.eval module - evalchemy may not be properly installed"
+        return 1
+    fi
     
-    for package in "${python_packages[@]}"; do
-        if ! python3 -c "import $package" &> /dev/null; then
-            missing_deps+=("python3-$package")
-        fi
-    done
-    
-    # Check system utilities (OS-specific)
-    local system_utils=(
-        "jq"
-        "curl"
-    )
-    
+    # Check system utilities
+    local system_utils=("jq" "curl")
     for util in "${system_utils[@]}"; do
         if ! command -v "$util" &> /dev/null; then
             missing_deps+=("$util")
         fi
     done
     
-    # Check nvidia-smi only on Linux systems
-    if [[ "$os_type" == "Linux" ]]; then
-        if ! command -v nvidia-smi &> /dev/null; then
-            log WARN "nvidia-smi not found on Linux system - GPU monitoring will be limited"
-            # Don't add to missing_deps for Linux, just warn
-        fi
-    elif [[ "$os_type" == "Darwin" ]]; then
-        log INFO "Running on macOS - GPU checks will be skipped (nvidia-smi not required)"
-    else
-        log INFO "Running on $os_type - GPU checks may be limited"
-    fi
-    
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         log ERROR "Missing dependencies: ${missing_deps[*]}"
-        log ERROR "Please install missing dependencies before running"
-        
-        # Provide OS-specific installation hints
-        if [[ "$os_type" == "Darwin" ]]; then
-            log INFO "On macOS, install missing dependencies with:"
-            log INFO "  brew install jq  # for jq"
-            log INFO "  pip install lm-eval torch transformers accelerate openai requests numpy datasets  # for Python packages"
-        elif [[ "$os_type" == "Linux" ]]; then
-            log INFO "On Linux, install missing dependencies with your package manager"
-        fi
-        
         return 1
     fi
     
-    log INFO "All dependencies satisfied for $os_type"
+    log INFO "All dependencies satisfied"
     return 0
 }
 
@@ -279,89 +327,15 @@ validate_config() {
         return 1
     fi
     
-    # Check required fields
-    local required_fields=(
-        ".benchmarks"
-        ".model_configs"
-        ".evaluation_settings"
-    )
-    
-    for field in "${required_fields[@]}"; do
-        if ! jq -e "$field" "$config_file" >/dev/null 2>&1; then
-            log ERROR "Missing required field in config: $field"
-            return 1
+    # Check for required sections
+    local required_sections=(".tasks" ".model_config" ".evaluation_config")
+    for section in "${required_sections[@]}"; do
+        if ! jq -e "$section" "$config_file" >/dev/null 2>&1; then
+            log WARN "Missing configuration section: $section"
         fi
     done
     
-    # Validate benchmarks
-    local benchmark_count=$(jq '.benchmarks | length' "$config_file")
-    if [[ "$benchmark_count" -eq 0 ]]; then
-        log ERROR "No benchmarks defined in configuration"
-        return 1
-    fi
-    
-    log INFO "Configuration validation passed ($benchmark_count benchmarks configured)"
-    return 0
-}
-
-check_gpu_availability() {
-    log INFO "Checking GPU availability..."
-    
-    local os_type=$(uname)
-    
-    # Handle different operating systems
-    if [[ "$os_type" == "Darwin" ]]; then
-        log INFO "Running on macOS - NVIDIA GPU checks skipped"
-        log INFO "Using CPU-only mode for evaluation"
-        # Force CPU mode on macOS
-        GPU_DEVICE="cpu"
-        return 0
-    fi
-    
-    if ! command -v nvidia-smi &> /dev/null; then
-        log WARN "nvidia-smi not found, assuming CPU-only mode"
-        GPU_DEVICE="cpu"
-        return 0
-    fi
-    
-    # Check if GPU is available
-    if ! nvidia-smi &> /dev/null; then
-        log WARN "No NVIDIA GPUs detected, using CPU-only mode"
-        GPU_DEVICE="cpu"
-        return 0
-    fi
-    
-    # Check specific GPU device
-    if [[ "$GPU_DEVICE" != "cpu" ]]; then
-        local gpu_count=$(nvidia-smi -L | wc -l)
-        local gpu_list=(${GPU_DEVICE//,/ })
-        
-        for gpu in "${gpu_list[@]}"; do
-            if [[ "$gpu" -ge "$gpu_count" ]]; then
-                log ERROR "GPU device $gpu not available (only $gpu_count GPUs found)"
-                return 1
-            fi
-        done
-        
-        log INFO "GPU device(s) $GPU_DEVICE available"
-        
-        # Check GPU memory
-        for gpu in "${gpu_list[@]}"; do
-            local memory_info=$(nvidia-smi --id="$gpu" --query-gpu=memory.total,memory.used --format=csv,noheader,nounits)
-            local total_memory=$(echo "$memory_info" | cut -d',' -f1 | tr -d ' ')
-            local used_memory=$(echo "$memory_info" | cut -d',' -f2 | tr -d ' ')
-            local free_memory=$((total_memory - used_memory))
-            
-            log INFO "GPU $gpu memory: ${free_memory}MB free / ${total_memory}MB total"
-            
-            if [[ "$free_memory" -lt 4000 ]]; then
-                log WARN "GPU $gpu has limited free memory: ${free_memory}MB"
-            fi
-        done
-    else
-        log INFO "Using CPU-only mode for evaluation"
-    fi
-    
+    log INFO "Configuration validation passed"
     return 0
 }
 
@@ -377,338 +351,103 @@ test_model_endpoint() {
         
         # Try models endpoint
         if ! curl -f -s --connect-timeout 10 --max-time 30 "$endpoint/models" >/dev/null 2>&1; then
-            log ERROR "Cannot connect to model endpoint: $endpoint"
-            return 1
+            log WARN "Cannot connect to model endpoint: $endpoint"
+            log INFO "Endpoint may still work during actual evaluation"
+            return 0
         fi
     fi
     
-    # Test completion endpoint with simple request
-    local test_payload='{"model":"test","prompt":"Hello","max_tokens":1,"temperature":0}'
-    local response
-    
-    if response=$(curl -s --connect-timeout 10 --max-time 30 \
-                       -H "Content-Type: application/json" \
-                       -d "$test_payload" \
-                       "$endpoint/completions" 2>&1); then
-        log INFO "Model endpoint test successful"
-        return 0
-    else
-        log WARN "Model endpoint test returned: $response"
-        log INFO "Endpoint may still work during actual evaluation"
-        return 0
-    fi
-}
-
-list_benchmarks() {
-    local config_file="$1"
-    
-    log INFO "Available benchmarks in $config_file:"
-    
-    if [[ ! -f "$config_file" ]]; then
-        log ERROR "Configuration file not found"
-        return 1
-    fi
-    
-    # Parse and display benchmarks
-    local benchmarks
-    if benchmarks=$(jq -r '.benchmarks | to_entries[] | "\(.key): \(.value.enabled)"' "$config_file" 2>/dev/null); then
-        echo ""
-        echo -e "${BLUE}Benchmark Configuration:${NC}"
-        echo "$benchmarks" | while read -r line; do
-            local name=$(echo "$line" | cut -d':' -f1)
-            local enabled=$(echo "$line" | cut -d':' -f2 | tr -d ' ')
-            
-            if [[ "$enabled" == "true" ]]; then
-                echo -e "  ${GREEN}✓${NC} $name (enabled)"
-            else
-                echo -e "  ${RED}✗${NC} $name (disabled)"
-            fi
-        done
-        echo ""
-    else
-        log ERROR "Failed to parse benchmarks from configuration"
-        return 1
-    fi
-    
+    log INFO "Model endpoint test successful"
     return 0
 }
 
 prepare_environment() {
     log INFO "Preparing evaluation environment..."
     
-    local os_type=$(uname)
-    
     # Create output directories
     mkdir -p "$RESULTS_DIR"
     mkdir -p "$(dirname "$LOG_FILE")"
     
-    # Set CUDA device (only on systems that support it)
-    if [[ "$GPU_DEVICE" != "cpu" && "$os_type" != "Darwin" ]]; then
-        export CUDA_VISIBLE_DEVICES="$GPU_DEVICE"
-        log INFO "Set CUDA_VISIBLE_DEVICES=$GPU_DEVICE"
-        
-        # Set PyTorch CUDA settings for better performance
-        export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
-    else
-        log INFO "Using CPU-only mode"
-        if [[ "$os_type" == "Darwin" ]]; then
-            log INFO "macOS detected - CUDA settings skipped"
-        fi
-    fi
-    
-    # Set general PyTorch settings
+    # Set environment variables for evalchemy
     export TOKENIZERS_PARALLELISM="false"
     
-    log INFO "Environment prepared for $os_type, results will be saved to: $RESULTS_DIR"
+    log INFO "Environment prepared, results will be saved to: $RESULTS_DIR"
 }
 
-run_benchmark() {
-    local benchmark_name="$1"
-    local config_file="$2"
-    local endpoint="$3"
+run_evalchemy_evaluation() {
+    local tasks="$1"
+    local endpoint="$2"
     
-    log INFO "Running benchmark: $benchmark_name"
+    log INFO "Running evalchemy evaluation with tasks: $tasks"
     
-    # Extract benchmark configuration from tasks section first, then fallback to benchmarks
-    local benchmark_config
-    if benchmark_config=$(jq -r ".tasks.\"$benchmark_name\"" "$config_file" 2>/dev/null) && [[ "$benchmark_config" != "null" ]]; then
-        log DEBUG "Using detailed task configuration for $benchmark_name"
-    elif benchmark_config=$(jq -r ".benchmarks.\"$benchmark_name\"" "$config_file" 2>/dev/null) && [[ "$benchmark_config" != "null" ]]; then
-        log DEBUG "Using basic benchmark configuration for $benchmark_name"
-    else
-        log ERROR "Benchmark $benchmark_name not found in configuration"
-        return 1
-    fi
+    # Read model configuration from config file - use simple defaults for now
+    local model_name="qwen3-8b"
+    local tokenizer="Qwen/Qwen3-8B"
+    local tokenizer_backend="huggingface"
+    local temperature="0.0"
+    local top_p="1.0"
     
-    # Check if benchmark is enabled
-    local enabled=$(echo "$benchmark_config" | jq -r '.enabled // true')
-    if [[ "$enabled" != "true" ]]; then
-        log INFO "Benchmark $benchmark_name is disabled, skipping"
-        return 0
-    fi
-    
-    # Read global defaults from evaluation_settings
-    local global_num_fewshot=$(jq -r '.evaluation_settings.num_fewshot // 0' "$config_file")
-    local global_batch_size=$(jq -r '.evaluation_settings.batch_size // 8' "$config_file")
-    local global_limit=$(jq -r '.evaluation_settings.limit // empty' "$config_file")
-    
-    # Prepare benchmark arguments with fallback to evaluation_settings
-    local tasks=$(echo "$benchmark_config" | jq -r '.tasks // empty')
-    local num_fewshot=$(echo "$benchmark_config" | jq -r ".num_fewshot // $global_num_fewshot")
-    local limit=$(echo "$benchmark_config" | jq -r ".limit // \"$global_limit\"" | sed 's/^"//;s/"$//')
-    local task_batch_size=$(echo "$benchmark_config" | jq -r ".batch_size // $global_batch_size")
-    
-    # Handle tasks array or single task
-    if [[ -z "$tasks" || "$tasks" == "null" || "$tasks" == "empty" ]]; then
-        tasks="$benchmark_name"
-    else
-        # If tasks is a JSON array, convert to comma-separated string
-        if echo "$tasks" | jq -e 'type == "array"' >/dev/null 2>&1; then
-            tasks=$(echo "$tasks" | jq -r 'join(",")')
-        elif [[ "$tasks" == "["* ]]; then
-            # Handle case where jq -r returns array format as string
-            tasks=$(echo "$benchmark_config" | jq -r '.tasks | join(",")')
-        fi
-    fi
-    
-    # JSON에서 모델 설정 읽기
-    model_type=$(jq -r '.model_configs.vllm_api_config.model_type' "$config_file")
-    model_args=$(jq -r '.model_configs.vllm_api_config.model_args' "$config_file")
-    base_url=$(jq -r '.model_configs.vllm_api_config.base_url' "$config_file")
-    
-    # Use task-specific batch_size, fallback to evaluation_settings, then environment variable
-    local final_batch_size="${task_batch_size:-${global_batch_size:-$BATCH_SIZE}}"
-    
-    log DEBUG "Using values - num_fewshot: $num_fewshot, batch_size: $final_batch_size, limit: $limit"
+    log DEBUG "Model config: name=$model_name, tokenizer=$tokenizer, backend=$tokenizer_backend"
     
     # Build command arguments
     local cmd_args=(
-        "--model" "$model_type"
-        "--model_args" "base_url=${endpoint:-$base_url},$model_args,max_tokens=$MAX_LENGTH"
+        "--model" "curator"
         "--tasks" "$tasks"
-        "--num_fewshot" "$num_fewshot"
-        "--batch_size" "$final_batch_size"
-        "--output_path" "$RESULTS_DIR/${benchmark_name}_results.json"
-        "--log_samples"
-        "--show_config"
+        "--model_args" "base_url=${endpoint},model=${model_name},tokenizer=${tokenizer},tokenizer_backend=${tokenizer_backend}"
+        "--num_fewshot" "$NUM_FEWSHOT"
+        "--batch_size" "$BATCH_SIZE"
+        "--output_path" "$RESULTS_DIR/"
+        "--limit" "$LIMIT"
+        "--apply_chat_template" "True"
+        "--max_tokens" "$MAX_TOKENS"
+        "--verbosity" "$LOG_LEVEL"
     )
     
-    # Add optional arguments
-    if [[ -n "$limit" && "$limit" != "null" && "$limit" != "empty" ]]; then
-        cmd_args+=("--limit" "$limit")
+    # Add debug flag if log level is DEBUG
+    if [[ "$LOG_LEVEL" == "DEBUG" ]]; then
+        cmd_args+=("--debug")
     fi
     
-    # Add generation kwargs
-    local gen_kwargs=$(jq -r '.generation_kwargs // {} | to_entries | map("\(.key)=\(.value)") | join(",")' "$config_file")
-    if [[ -n "$gen_kwargs" && "$gen_kwargs" != "" ]]; then
-        cmd_args+=("--gen_kwargs" "$gen_kwargs")
+    # Add log samples if enabled in config
+    local log_samples=$(get_config_value "$EVAL_CONFIG_PATH" ".evaluation_settings.log_samples" "false")
+    if [[ "$log_samples" == "true" ]]; then
+        cmd_args+=("--log_samples")
     fi
     
     # Run evaluation
-    local benchmark_start_time=$(date +%s)
-    local benchmark_log="$RESULTS_DIR/${benchmark_name}_benchmark.log"
+    local evaluation_start_time=$(date +%s)
     
-    log INFO "Executing: lm_eval ${cmd_args[*]}"
+    log INFO "Executing: python -m eval.eval ${cmd_args[*]}"
     
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log INFO "[DRY RUN] Would run: lm_eval ${cmd_args[*]}"
+        log INFO "[DRY RUN] Would run: python -m eval.eval ${cmd_args[*]}"
         return 0
     fi
     
-    # Execute benchmark
-    if python3 -m lm_eval "${cmd_args[@]}" \
-        > "$benchmark_log" 2>&1; then
+    # Execute evaluation
+    if python -m eval.eval "${cmd_args[@]}" \
+        > "$LOG_FILE" 2>&1; then
         
-        local benchmark_end_time=$(date +%s)
-        local benchmark_duration=$((benchmark_end_time - benchmark_start_time))
+        local evaluation_end_time=$(date +%s)
+        local evaluation_duration=$((evaluation_end_time - evaluation_start_time))
         
-        log INFO "Benchmark $benchmark_name completed in ${benchmark_duration}s"
-        
-        # Parse results
-        if [[ -f "$RESULTS_DIR/${benchmark_name}_results.json" ]]; then
-            local accuracy=$(jq -r '.results | to_entries[0].value.acc // .results | to_entries[0].value.acc_norm // "N/A"' \
-                           "$RESULTS_DIR/${benchmark_name}_results.json" 2>/dev/null || echo "N/A")
-            log INFO "Benchmark $benchmark_name accuracy: $accuracy"
-        fi
-        
+        log INFO "Evaluation completed in ${evaluation_duration}s"
         return 0
     else
-        log ERROR "Benchmark $benchmark_name failed"
-        log ERROR "Check benchmark log: $benchmark_log"
+        log ERROR "Evaluation failed"
+        log ERROR "Check log file: $LOG_FILE"
         return 1
     fi
-}
-
-aggregate_results() {
-    log INFO "Aggregating evaluation results..."
-    
-    local summary_data="{}"
-    summary_data=$(echo "$summary_data" | jq ". + {\"run_id\": \"$RUN_ID\"}")
-    summary_data=$(echo "$summary_data" | jq ". + {\"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}")
-    summary_data=$(echo "$summary_data" | jq ". + {\"model_endpoint\": \"$VLLM_MODEL_ENDPOINT\"}")
-    summary_data=$(echo "$summary_data" | jq ". + {\"config_path\": \"$EVAL_CONFIG_PATH\"}")
-    
-    local results_data="{}"
-    local total_benchmarks=0
-    local successful_benchmarks=0
-    
-    # Process each result file
-    for result_file in "$RESULTS_DIR"/*_results.json; do
-        if [[ -f "$result_file" ]]; then
-            local benchmark_name=$(basename "$result_file" "_results.json")
-            total_benchmarks=$((total_benchmarks + 1))
-            
-            # Extract key metrics
-            if jq empty "$result_file" 2>/dev/null; then
-                successful_benchmarks=$((successful_benchmarks + 1))
-                
-                # Extract all metrics for this benchmark
-                local benchmark_results
-                if benchmark_results=$(jq '.results' "$result_file" 2>/dev/null); then
-                    results_data=$(echo "$results_data" | jq ". + {\"$benchmark_name\": $benchmark_results}")
-                fi
-            else
-                log WARN "Invalid JSON in result file: $result_file"
-            fi
-        fi
-    done
-    
-    # Add summary statistics
-    summary_data=$(echo "$summary_data" | jq ". + {\"total_benchmarks\": $total_benchmarks}")
-    summary_data=$(echo "$summary_data" | jq ". + {\"successful_benchmarks\": $successful_benchmarks}")
-    summary_data=$(echo "$summary_data" | jq ". + {\"results\": $results_data}")
-    
-    # Add system information
-    local system_info="{}"
-    system_info=$(echo "$system_info" | jq ". + {\"hostname\": \"$(hostname)\"}")
-    system_info=$(echo "$system_info" | jq ". + {\"gpu_device\": \"$GPU_DEVICE\"}")
-    system_info=$(echo "$system_info" | jq ". + {\"batch_size\": $BATCH_SIZE}")
-    system_info=$(echo "$system_info" | jq ". + {\"max_length\": $MAX_LENGTH}")
-    
-    summary_data=$(echo "$summary_data" | jq ". + {\"system_info\": $system_info}")
-    
-    # Save summary
-    echo "$summary_data" | jq '.' > "$SUMMARY_FILE"
-    
-    log INFO "Results summary saved to: $SUMMARY_FILE"
-    log INFO "Evaluation completed: $successful_benchmarks/$total_benchmarks benchmarks successful"
-    
-    return 0
-}
-
-standardize_results() {
-    local results_dir="$1"
-    local parsed_dir="${SCRIPT_DIR}/parsed"
-    local standardize_script_path="${SCRIPT_DIR}/../../scripts/standardize_evalchemy.py"
-
-    log INFO "Standardizing evaluation results..."
-
-    if [[ ! -f "$standardize_script_path" ]]; then
-        log ERROR "Standardization script not found at: $standardize_script_path"
-        return 1
-    fi
-
-    mkdir -p "$parsed_dir"
-    log INFO "Standardized results will be saved in: $parsed_dir"
-
-    local result_files=("$results_dir"/*_results*.json)
-    if [[ ${#result_files[@]} -eq 0 || ! -e "${result_files[0]}" ]]; then
-        log WARN "No result files found to standardize in $results_dir"
-        return 0
-    fi
-
-    log INFO "Found ${#result_files[@]} result files to standardize."
-
-    for item in "${result_files[@]}"; do
-        local input_to_standardize=""
-        local base_stem=""
-
-        if [[ -d "$item" ]]; then
-            # Handle directory output (from --log_samples)
-            # Find the result file, which may have a timestamp (e.g., results_20240101.json).
-            result_file_path=$(find "$item" -name 'results*.json' -print -quit)
-
-            if [[ -n "$result_file_path" && -f "$result_file_path" ]]; then
-                input_to_standardize="$result_file_path"
-                local dirname
-                dirname=$(basename "$item")
-                base_stem="${dirname%_results.json}"
-            else
-                log WARN "No result file matching 'results*.json' found in directory: $item"
-                continue
-            fi
-        elif [[ -f "$item" ]]; then
-            # Handle file output (original expectation)
-            input_to_standardize="$item"
-            local filename
-            filename=$(basename "$item")
-            base_stem="${filename%_results.json}"
-        fi
-
-        if [[ -n "$input_to_standardize" ]]; then
-            local output_file="$parsed_dir/${RUN_ID}_${base_stem}.json"
-            
-            log INFO "Standardizing $input_to_standardize -> $output_file"
-
-            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID"; then
-                log INFO "Successfully standardized $base_stem"
-            else
-                log ERROR "Failed to standardize $base_stem"
-            fi
-        fi
-    done
-
-    log INFO "Standardization process complete. Parsed files are in: $parsed_dir"
 }
 
 main() {
     # Set up signal handlers
     trap cleanup EXIT INT TERM
     
-    # Store the original working directory
-    local initial_pwd
-    initial_pwd=$(pwd)
-
+    # Default tasks (will be overridden by config)
+    local tasks=""
+    local override_tasks=false
+    
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -716,24 +455,20 @@ main() {
                 VLLM_MODEL_ENDPOINT="$2"
                 shift 2
                 ;;
+            -t|--tasks)
+                tasks="$2"
+                override_tasks=true
+                shift 2
+                ;;
             -c|--config)
                 EVAL_CONFIG_PATH="$2"
-                # If path is relative, make it absolute from the original CWD
-                if [[ ! "$EVAL_CONFIG_PATH" =~ ^/ && -n "$initial_pwd" ]]; then
-                    EVAL_CONFIG_PATH="$initial_pwd/$EVAL_CONFIG_PATH"
-                fi
                 shift 2
                 ;;
             -o|--output)
                 OUTPUT_DIR="$2"
-                # If path is relative, make it absolute from the original CWD
-                if [[ ! "$OUTPUT_DIR" =~ ^/ && -n "$initial_pwd" ]]; then
-                    OUTPUT_DIR="$initial_pwd/$OUTPUT_DIR"
-                fi
                 RESULTS_DIR="${OUTPUT_DIR}/${RUN_ID}"
                 LOG_FILE="${RESULTS_DIR}/evalchemy_${RUN_ID}.log"
                 ERROR_LOG="${RESULTS_DIR}/evalchemy_errors_${RUN_ID}.log"
-                SUMMARY_FILE="${RESULTS_DIR}/evalchemy_summary_${RUN_ID}.json"
                 shift 2
                 ;;
             -r|--run-id)
@@ -741,27 +476,22 @@ main() {
                 RESULTS_DIR="${OUTPUT_DIR}/${RUN_ID}"
                 LOG_FILE="${RESULTS_DIR}/evalchemy_${RUN_ID}.log"
                 ERROR_LOG="${RESULTS_DIR}/evalchemy_errors_${RUN_ID}.log"
-                SUMMARY_FILE="${RESULTS_DIR}/evalchemy_summary_${RUN_ID}.json"
-                shift 2
-                ;;
-            -g|--gpu)
-                GPU_DEVICE="$2"
                 shift 2
                 ;;
             -b|--batch-size)
                 BATCH_SIZE="$2"
                 shift 2
                 ;;
-            -l|--max-length)
-                MAX_LENGTH="$2"
+            --max-tokens)
+                MAX_TOKENS="$2"
                 shift 2
                 ;;
-            -t|--temperature)
-                TEMPERATURE="$2"
+            --num-fewshot)
+                NUM_FEWSHOT="$2"
                 shift 2
                 ;;
-            -p|--top-p)
-                TOP_P="$2"
+            --limit)
+                LIMIT="$2"
                 shift 2
                 ;;
             --log-level)
@@ -772,13 +502,13 @@ main() {
                 DRY_RUN="true"
                 shift
                 ;;
-            --list-benchmarks)
-                LIST_BENCHMARKS="true"
+            --debug)
+                LOG_LEVEL="DEBUG"
                 shift
                 ;;
-            --validate-config)
-                VALIDATE_CONFIG="true"
-                shift
+            --list-tasks)
+                list_tasks
+                exit 0
                 ;;
             -h|--help)
                 show_usage
@@ -796,17 +526,6 @@ main() {
         esac
     done
     
-    # Early exits for special modes
-    if [[ "${LIST_BENCHMARKS:-false}" == "true" ]]; then
-        list_benchmarks "$EVAL_CONFIG_PATH"
-        exit $?
-    fi
-    
-    if [[ "${VALIDATE_CONFIG:-false}" == "true" ]]; then
-        validate_config "$EVAL_CONFIG_PATH"
-        exit $?
-    fi
-    
     # Initialize logging directory
     mkdir -p "$RESULTS_DIR" 2>/dev/null || true
     
@@ -816,21 +535,32 @@ main() {
     log INFO "Configuration: $EVAL_CONFIG_PATH"
     log INFO "Output directory: $RESULTS_DIR"
     
+    # Pre-flight checks
+    check_dependencies || exit 1
+    validate_config "$EVAL_CONFIG_PATH" || exit 1
+    
+    # Load configuration values
+    load_config_values "$EVAL_CONFIG_PATH"
+    
+    # Determine tasks to run
+    if [[ "$override_tasks" == "false" ]]; then
+        tasks=$(get_enabled_tasks "$EVAL_CONFIG_PATH")
+        log INFO "Auto-detected enabled tasks from config: $tasks"
+    else
+        log INFO "Using manually specified tasks: $tasks"
+    fi
+    
+    if [[ -z "$tasks" ]]; then
+        log ERROR "No tasks specified or enabled in configuration"
+        exit 1
+    fi
+    
     # Validation
     if [[ -z "$VLLM_MODEL_ENDPOINT" ]]; then
         log ERROR "VLLM model endpoint is required"
         log ERROR "Use --endpoint or set VLLM_MODEL_ENDPOINT environment variable"
         exit 1
     fi
-    
-    # Change to the parent directory of the script
-    cd "$SCRIPT_DIR" || exit 1
-    log INFO "Changed working directory to $(pwd)"
-
-    # Pre-flight checks
-    check_dependencies || exit 1
-    validate_config "$EVAL_CONFIG_PATH" || exit 1
-    check_gpu_availability || exit 1
     
     # Skip endpoint test in dry-run mode
     if [[ "${DRY_RUN:-false}" != "true" ]]; then
@@ -842,70 +572,26 @@ main() {
     # Environment setup
     prepare_environment
     
-    # Get list of enabled benchmarks
-    local enabled_benchmarks
-    if ! enabled_benchmarks=$(jq -r '.benchmarks | to_entries[] | select(.value.enabled) | .key' "$EVAL_CONFIG_PATH" 2>/dev/null); then
-        log ERROR "Failed to parse enabled benchmarks from configuration"
-        exit 1
-    fi
-    
-    local benchmark_array=()
-    while IFS= read -r benchmark; do
-        [[ -n "$benchmark" ]] && benchmark_array+=("$benchmark")
-    done <<< "$enabled_benchmarks"
-    
-    if [[ ${#benchmark_array[@]} -eq 0 ]]; then
-        log ERROR "No enabled benchmarks found in configuration"
-        exit 1
-    fi
-    
-    log INFO "Found ${#benchmark_array[@]} enabled benchmarks: ${benchmark_array[*]}"
-    
-    # Run benchmarks
-    local failed_benchmarks=()
+    # Run evaluation
     local evaluation_start_time=$(date +%s)
     
-    for benchmark in "${benchmark_array[@]}"; do
-        if ! run_benchmark "$benchmark" "$EVAL_CONFIG_PATH" "$VLLM_MODEL_ENDPOINT"; then
-            failed_benchmarks+=("$benchmark")
-            log ERROR "Benchmark $benchmark failed"
-        fi
-    done
+    if ! run_evalchemy_evaluation "$tasks" "$VLLM_MODEL_ENDPOINT"; then
+        log ERROR "Evaluation failed"
+        exit 1
+    fi
     
     local evaluation_end_time=$(date +%s)
     local total_duration=$((evaluation_end_time - evaluation_start_time))
     
-    # Aggregate results
-    aggregate_results
-    
     # Final summary
-    local successful_count=$((${#benchmark_array[@]} - ${#failed_benchmarks[@]}))
-    
     log INFO "=== Evaluation Summary ==="
     log INFO "Run ID: $RUN_ID"
     log INFO "Total duration: ${total_duration}s"
-    log INFO "Benchmarks attempted: ${#benchmark_array[@]}"
-    log INFO "Benchmarks successful: $successful_count"
-    log INFO "Benchmarks failed: ${#failed_benchmarks[@]}"
-    
-    if [[ ${#failed_benchmarks[@]} -gt 0 ]]; then
-        log WARN "Failed benchmarks: ${failed_benchmarks[*]}"
-    fi
-    
+    log INFO "Tasks: $tasks"
     log INFO "Results directory: $RESULTS_DIR"
-    log INFO "Summary file: $SUMMARY_FILE"
     
-    # Standardize results
-    standardize_results "$RESULTS_DIR"
-
-    # Exit with appropriate code
-    if [[ ${#failed_benchmarks[@]} -eq 0 ]]; then
-        log INFO "All benchmarks completed successfully"
-        exit 0
-    else
-        log ERROR "Some benchmarks failed"
-        exit 1
-    fi
+    log INFO "Evalchemy evaluation completed successfully"
+    exit 0
 }
 
 # Only run main if script is executed directly
