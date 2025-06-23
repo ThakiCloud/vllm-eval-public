@@ -65,9 +65,9 @@
 #### 7. 기능 요구사항 (Functional Requirements)
 
 * **F‑01** 릴리스 훅: `ghcr.io/{repo}/*` 이미지 Push & `tag =~ /release-.+/` 시 파이프라인 자동 실행
-* **F‑02** 데이터셋 버전: `dataset.yaml` SHA‑256 기반 불변 버전 체계
-* **F‑03** Deepeval Custom Metric Registry: `metrics/*.py`
-* **F‑04** Evalchemy Benchmark Selection: `eval_config.json` enable flag
+* **F‑02** 데이터셋 버전: `datasets/raw/` 디렉토리 내 데이터셋별 관리
+* **F‑03** Deepeval Custom Metric Registry: `eval/deepeval_tests/metrics/*.py`
+* **F‑04** Evalchemy Benchmark Selection: `configs/evalchemy.json` 내 `tasks` 목록
 * **F‑05** 결과 스키마: `run_id`,`model_tag`,`metric`,`value`,`ts`
 * **F‑06** Regression Alert: 최근 N회 Rolling Mean 대비 10 %↓ 시 **Teams Mentions** (@LLM‑Ops)
 

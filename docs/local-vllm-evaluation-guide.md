@@ -126,7 +126,7 @@ VLLM_MODEL_ENDPOINT=http://localhost:8000/v1
 MODEL_NAME=qwen3-8b
 
 # 평가 설정
-EVAL_CONFIG_PATH=eval/evalchemy/configs/eval_config.json
+EVAL_CONFIG_PATH=configs/evalchemy.json
 OUTPUT_DIR=./test_results
 RUN_ID=local_eval_$(date +%Y%m%d_%H%M%S)
 
@@ -146,7 +146,8 @@ source .env
 mkdir -p test_results
 
 # 테스트용 데이터셋 생성
-cat > eval/deepeval_tests/datasets/test_local_dataset.jsonl << 'EOF'
+mkdir -p datasets/raw/local_test_dataset
+cat > datasets/raw/local_test_dataset/test.jsonl << 'EOF'
 {"input": "한국의 수도는 어디인가요?", "expected_output": "한국의 수도는 서울입니다.", "context": "한국 지리에 관한 질문입니다."}
 {"input": "파이썬에서 리스트를 정렬하는 방법은?", "expected_output": "파이썬에서 리스트를 정렬하려면 sort() 메서드나 sorted() 함수를 사용할 수 있습니다.", "context": "프로그래밍 관련 질문입니다."}
 {"input": "지구의 둘레는 얼마나 됩니까?", "expected_output": "지구의 둘레는 약 40,075km입니다.", "context": "지구과학에 관한 질문입니다."}

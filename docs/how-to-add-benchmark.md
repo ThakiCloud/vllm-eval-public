@@ -266,23 +266,28 @@ EOF
 
 ## ⚡ Evalchemy 벤치마크 추가
 
+Evalchemy에 새로운 벤치마크를 추가하는 과정은 3단계로 이루어집니다:
+1.  **YAML 태스크 정의**: `lm-evaluation-harness`가 이해할 수 있는 YAML 형식으로 태스크를 정의합니다.
+2.  **`eval_config.json` 등록**: 생성한 태스크를 중앙 설정 파일에 추가하여 관리합니다.
+3.  **테스트 및 실행**: `run_evalchemy.sh` 스크립트를 사용하여 벤치마크를 실행하고 검증합니다.
+
 ### 1. 태스크 디렉토리 및 초기화 파일 생성
 
-먼저 커스텀 태스크를 위한 디렉토리와 필요한 파일들을 생성합니다:
+먼저 커스텀 태스크를 위한 디렉토리와 `lm-evaluation-harness`가 태스크를 인식하는 데 필요한 초기화 파일을 생성합니다. 이 작업은 처음에 한 번만 수행하면 됩니다.
 
 ```bash
-# 태스크 디렉토리 생성
-mkdir -p eval/evalchemy/tasks
+# 태스크 디렉토리 생성 (eval/standard_evalchemy 내부에 위치)
+mkdir -p eval/standard_evalchemy/tasks
 
 # __init__.py 파일 생성 (태스크 인식을 위해 필요)
-cat > eval/evalchemy/tasks/__init__.py << 'EOF'
+cat > eval/standard_evalchemy/tasks/__init__.py << 'EOF'
 """
 커스텀 태스크 모듈
 
-이 파일은 lm_eval이 커스텀 태스크를 인식할 수 있도록 하는 초기화 파일입니다.
-YAML 기반 태스크 정의를 사용하는 경우에도 이 파일이 있어야 합니다.
+이 파일은 lm_eval이 이 디렉토리를 커스텀 태스크가 포함된
+파이썬 패키지로 인식하도록 합니다. YAML 기반 태스크를 주로 사용하더라도
+이 파일은 필요합니다.
 """
-
 # 태스크 디렉토리임을 명시
 __version__ = "1.0.0"
 __author__ = "VLLM Eval Team"
@@ -291,65 +296,28 @@ EOF
 
 ### 2. YAML 태스크 정의 생성
 
-최신 lm_eval (v0.4+)에서는 YAML 파일로 태스크를 정의합니다:
+`lm-evaluation-harness` v0.4+ 표준에 따라 YAML 파일로 새로운 태스크를 정의합니다.
 
 ```bash
 # custom_task_1.yaml 생성
-cat > eval/evalchemy/tasks/custom_task_1.yaml << 'EOF'
+cat > eval/standard_evalchemy/tasks/custom_task_1.yaml << 'EOF'
 task: custom_task_1
 test_split: test
 fewshot_split: train
-fewshot_config:
-  sampler: first_n
 doc_to_text: "질문: {{question}}\n답변:"
 doc_to_target: "{{answer}}"
-description: "커스텀 태스크 1 - 질문답변 평가"
+description: "커스텀 태스크 1 - 간단한 질문답변"
 dataset_path: json
 dataset_kwargs:
   data_files:
-    train: "../../datasets/raw/custom_benchmark/train.jsonl"
-    test: "../../datasets/raw/custom_benchmark/test.jsonl"
+    train: "../../../datasets/raw/custom_benchmark/train.jsonl"
+    test: "../../../datasets/raw/custom_benchmark/test.jsonl"
 output_type: generate_until
 generation_kwargs:
-  until: ["\n"]
-  max_gen_toks: 100
+  until: ["\n", "질문:"]
+  max_gen_toks: 256
 filter_list:
   - name: "whitespace_cleanup"
-    filter:
-      - function: "regex"
-        regex_pattern: "^\\s*(.*)$"
-metric_list:
-  - metric: exact_match
-    aggregation: mean
-    higher_is_better: true
-metadata:
-  version: 1.0
-EOF
-
-# custom_task_2.yaml 생성 (선택사항)
-cat > eval/evalchemy/tasks/custom_task_2.yaml << 'EOF'
-task: custom_task_2
-test_split: test
-fewshot_split: train
-fewshot_config:
-  sampler: first_n
-doc_to_text: "질문: {{question}}\n답변:"
-doc_to_target: "{{answer}}"
-description: "커스텀 태스크 2 - 질문답변 평가"
-dataset_path: json
-dataset_kwargs:
-  data_files:
-    train: "../../datasets/raw/custom_benchmark/train.jsonl"
-    test: "../../datasets/raw/custom_benchmark/test.jsonl"
-output_type: generate_until
-generation_kwargs:
-  until: ["\n"]
-  max_gen_toks: 100
-filter_list:
-  - name: "whitespace_cleanup"
-    filter:
-      - function: "regex"
-        regex_pattern: "^\\s*(.*)$"
 metric_list:
   - metric: exact_match
     aggregation: mean
@@ -359,81 +327,122 @@ metadata:
 EOF
 ```
 
-**주요 설정 설명**:
-- `dataset_path: json`: JSON/JSONL 파일 사용
-- `dataset_kwargs`: 데이터 파일 경로 지정
-- `doc_to_text`: 입력 프롬프트 템플릿
-- `doc_to_target`: 정답 추출 방법
-- `exact_match`: 정확히 일치하는지 평가하는 메트릭
+**주요 YAML 설정**:
+- `task`: 태스크의 고유 이름. `eval_config.json`에서 이 이름을 사용합니다.
+- `dataset_path`: `json`으로 설정하여ローカル JSON/JSONL 파일을 사용합니다.
+- `dataset_kwargs`: 데이터 파일의 상대 경로를 지정합니다. **경로는 `eval/standard_evalchemy/` 디렉토리 기준**으로 작성해야 합니다.
+- `doc_to_text`/`doc_to_target`: 모델에 입력될 프롬프트 형식과 정답 필드를 지정합니다.
+- `metric_list`: 평가에 사용할 메트릭을 정의합니다.
+
+### 3. `configs/eval_config.json`에 태스크 등록
+
+YAML 파일을 생성한 후, `run_evalchemy.sh` 스크립트가 태스크를 인식하고 실행할 수 있도록 `eval/standard_evalchemy/configs/eval_config.json` 파일에 등록합니다.
+
+```bash
+# eval/standard_evalchemy/configs/eval_config.json 파일을 열어 "tasks" 섹션에 다음 내용을 추가합니다.
+# "custom_task_1"은 yaml 파일의 'task' 필드와 일치해야 합니다.
+```
+
+**`eval/standard_evalchemy/configs/eval_config.json` 수정 예시:**
+```json
+{
+  "benchmarks": {
+    // ...
+    "custom_eval_group": {
+      "enabled": true,
+      "description": "내가 만든 커스텀 벤치마크 그룹",
+      "tasks": ["custom_task_1"]
+    }
+  },
+  "tasks": {
+    // ... 기존 태스크들 ...
+    "custom_task_1": {
+      "enabled": true,
+      "tasks": ["custom_task_1"],
+      "num_fewshot": 0,
+      "batch_size": 1,
+      "limit": null,
+      "description": "커스텀 태스크 1 - 간단한 질문답변"
+    }
+  }
+}
+```
+- **`tasks` 섹션**: `custom_task_1`이라는 새 항목을 추가합니다. 여기서 키 값(`"custom_task_1"`)은 `run_evalchemy.sh` 스크립트 내에서 참조하는 이름이 됩니다. 내부의 `"tasks"` 배열에 있는 `custom_task_1`은 YAML 파일에 정의된 `task` 이름입니다.
+- **`benchmarks` 섹션 (선택 사항)**: 여러 태스크를 `custom_eval_group`과 같이 논리적인 그룹으로 묶어 한 번에 실행할 수 있습니다. `enabled: true`로 설정해야 실행됩니다.
 
 ## 🧪 테스트 및 검증
 
-### 1. 커스텀 태스크 인식 확인
+새롭게 추가한 벤치마크가 올바르게 동작하는지 확인합니다. 모든 테스트는 `eval/standard_evalchemy` 디렉토리에서 실행하는 것을 기준으로 합니다.
+
+### 1. 설정 파일 및 태스크 유효성 검사
 
 ```bash
-cd eval/evalchemy
-python3 -m lm_eval --include_path tasks --tasks list | grep custom
-```
+# 작업 디렉토리로 이동
+cd eval/standard_evalchemy
 
-### 2. 단위 테스트 실행
+# 설정 파일(eval_config.json)이 유효한 JSON인지 확인
+jq empty configs/eval_config.json && echo "✅ eval_config.json is valid"
+
+# 추가한 커스텀 태스크가 lm-evaluation-harness에 의해 인식되는지 확인
+# --tasks list 옵션으로 전체 태스크 목록을 확인하고 custom_task_1이 포함되어 있는지 검사합니다.
+./run_evalchemy.sh --tasks list | grep custom_task_1
+```
+> **참고**: `run_evalchemy.sh`는 내부적으로 `lm_eval` 실행 시 `--include_path tasks` 옵션을 자동으로 추가하여 `tasks/` 디렉토리의 커스텀 태스크를 읽어옵니다.
+
+### 2. Dry Run으로 실행 인수 확인
+
+실제 평가를 실행하기 전에, `run_evalchemy.sh`가 생성하는 `lm_eval` 명령어가 올바른지 `--dry-run` 옵션으로 확인합니다.
 
 ```bash
-# Deepeval 메트릭 테스트
-cd ../..
-python3 -m pytest eval/deepeval_tests/test_custom_metric.py -v
-
-# Evalchemy 태스크 테스트 (실제 모델 필요)
-cd eval/evalchemy
-python3 -m lm_eval --include_path tasks --model hf --model_args pretrained=gpt2 --tasks custom_task_1 --limit 2 --device cpu
+# --dry-run 옵션을 사용하여 실제 실행 없이 생성되는 명령어만 출력
+# --run-id는 결과가 저장될 디렉토리 이름이므로 테스트 목적에 맞게 지정합니다.
+./run_evalchemy.sh --endpoint http://localhost/vllm/v1/completions --run-id test_custom_task_dry_run --dry-run
 ```
 
-### 3. 실제 운영 환경에서 실행
+### 3. 소량 샘플로 테스트 실행
 
+`limit` 옵션을 사용하여 적은 수의 샘플로 빠르게 테스트를 완료하고 전체 파이프라인이 정상적으로 동작하는지 확인합니다.
+
+`configs/eval_config.json`에서 `limit` 값을 `5` 정도로 설정합니다.
+```json
+// ...
+    "custom_task_1": {
+      "enabled": true,
+      "tasks": ["custom_task_1"],
+      "limit": 5, // 5개 샘플만 테스트
+// ...
+```
+
+테스트 실행:
 ```bash
-# VLLM 서버와 함께 실행 - root 폴더에서 명령어 실행을 위한 cd ../..
-cd ../..
-./run_evalchemy.sh --endpoint http://your-vllm-server:8000/v1/completions
+# 실제 평가 실행 (5개 샘플)
+# --batch-size 1은 안정적인 테스트를 위해 권장됩니다.
+./run_evalchemy.sh --endpoint http://localhost/vllm/v1/completions --run-id test_custom_task_limit5 --batch-size 1
+
+# 실행 후 결과 확인
+cat results/test_custom_task_limit5/evalchemy_summary_test_custom_task_limit5.json | jq
 ```
 
-`run_evalchemy.sh` 스크립트는 이미 `--include_path tasks` 옵션이 포함되어 있어 커스텀 태스크를 자동으로 인식합니다.
+### 4. 전체 데이터셋으로 실제 평가 실행
 
-### 6. 문제 해결
+테스트가 성공적으로 완료되면, `limit` 값을 `null`로 변경하여 전체 데이터셋에 대한 평가를 진행합니다.
 
-#### ./run_evalchemy.sh 실행 시 task 인식 안됨
+`configs/eval_config.json`에서 `limit` 값을 `null`로 변경합니다.
+```json
+// ...
+    "custom_task_1": {
+      "enabled": true,
+      "tasks": ["custom_task_1"],
+      "limit": null, // 전체 데이터셋 사용
+// ...
+```
+
+실행:
 ```bash
-# 루트 폴더로 이동
+# 프로덕션용 실행
+./run_evalchemy.sh --endpoint http://your-vllm-server:8000/v1/completions --run-id custom_task_full_eval_$(date +%Y%m%d)
 ```
-
-#### 태스크 인식 안됨
-```bash
-# 해결: --include_path 확인
-python3 -m lm_eval --include_path tasks --tasks list
-
-# YAML 문법 검사
-python3 -c "import yaml; print(yaml.safe_load(open('tasks/custom_task_1.yaml')))"
-```
-
-#### macOS CUDA 에러
-```bash
-# CPU 모드 사용
-python3 -m lm_eval --include_path tasks --model hf --model_args pretrained=gpt2 --tasks custom_task_1 --device cpu
-```
-
-#### 데이터셋 경로 에러
-```bash
-# 해결: 상대 경로 확인
-ls -la ../../datasets/raw/custom_benchmark/
-```
-
-#### 답변 공백 문제
-```bash
-# 해결: " 도쿄"와 같이 앞에 공백이 추가된 경우 yaml파일에 해당 내용 추가
-filter_list:
-  - name: "whitespace_cleanup"
-    filter:
-      - function: "regex"
-        regex_pattern: "^\\s*(.*)$"
-```
+- `run_evalchemy.sh` 스크립트는 이미 `--include_path tasks` 옵션이 포함되어 있어 커스텀 태스크를 자동으로 인식합니다.
 
 ## 🔧 문제 해결 (Troubleshooting)
 
@@ -443,40 +452,38 @@ filter_list:
 
 **해결 방법**:
 ```bash
-# 1단계: --include_path 확인
-cd eval/evalchemy
-python3 -m lm_eval --include_path tasks --tasks list | grep custom
+# 1단계: 작업 디렉토리 확인
+# eval/standard_evalchemy 디렉토리에서 실행해야 합니다.
+pwd
 
-# 2단계: YAML 파일 구문 검사
+# 2단계: 태스크 목록 확인
+./run_evalchemy.sh --tasks list | grep custom_task_1
+
+# 3단계: YAML 파일 구문 검사
 python3 -c "import yaml; print(yaml.safe_load(open('tasks/custom_task_1.yaml')))"
 
-# 3단계: 태스크 디렉토리 구조 확인
+# 4단계: 태스크 디렉토리 구조 확인
 ls -la tasks/
 # 다음 파일들이 있어야 함:
+# - __init__.py
 # - custom_task_1.yaml
-# - custom_task_2.yaml
 ```
 
 ### 2. 데이터셋 로딩 에러
 
-**증상**: `Dataset 'custom_dataset' doesn't exist on the Hub`
+**증상**: `Dataset 'custom_dataset' doesn't exist on the Hub` 또는 `FileNotFoundError`
 
 **원인**: YAML 파일에서 잘못된 데이터셋 경로 참조
 
 **해결 방법**:
 ```bash
-# 1단계: 데이터 파일 존재 확인
-ls -la ../../datasets/raw/custom_benchmark/
-# train.jsonl과 test.jsonl이 있어야 함
+# 1단계: YAML 파일의 dataset_kwargs 경로 확인
+# 경로는 eval/standard_evalchemy 디렉토리를 기준으로 한 상대 경로여야 합니다.
+cat tasks/custom_task_1.yaml | grep -A 2 data_files
 
-# 2단계: YAML 설정 확인
-cat tasks/custom_task_1.yaml | grep -A 5 dataset_path
-# 다음과 같이 설정되어야 함:
-# dataset_path: json
-# dataset_kwargs:
-#   data_files:
-#     train: "../../datasets/raw/custom_benchmark/train.jsonl"
-#     test: "../../datasets/raw/custom_benchmark/test.jsonl"
+# 2단계: 실제 파일 존재 확인
+ls -la ../../../datasets/raw/custom_benchmark/
+# train.jsonl과 test.jsonl이 있어야 함
 ```
 
 ### 3. macOS에서 CUDA 에러
@@ -484,135 +491,51 @@ cat tasks/custom_task_1.yaml | grep -A 5 dataset_path
 **증상**: `AssertionError: Torch not compiled with CUDA enabled`
 
 **해결 방법**:
+- `run_evalchemy.sh` 스크립트는 macOS 환경을 자동으로 감지하고 `--device cpu` 옵션을 추가합니다. 만약 스크립트를 사용하지 않고 직접 `lm_eval`을 실행한다면 `--device cpu` 옵션을 명시적으로 추가해야 합니다.
+
 ```bash
-# 항상 --device cpu 옵션 사용
-python3 -m lm_eval --device cpu
+# 스크립트 사용 시 자동으로 처리됨
+./run_evalchemy.sh --endpoint http://localhost/vllm/v1/completions
 
-# 2단계: 배치 크기 줄이기
-python3 -m lm_eval --batch_size 1
-
-# 3단계: 작은 모델 사용
-python3 -m lm_eval --model hf --model_args pretrained=distilgpt2
+# 직접 실행 시
+python3 -m lm_eval --device cpu ...
 ```
 
 ### 4. YAML 파일 split 에러
 
 **증상**: `KeyError: 'test'` 또는 `KeyError: 'validation'`
 
-**원인**: 데이터셋에 해당 split이 없음
+**원인**: 데이터셋에 해당 split이 없거나, JSONL 파일의 키가 잘못 지정됨
 
 **해결 방법**:
 ```bash
-# 1단계: 사용 가능한 split 확인
+# 1단계: JSONL 파일 내용 확인 (키가 'train', 'test'로 되어 있는지)
+# 2단계: YAML 파일에서 올바른 split 사용 (test_split: test)
+# 3단계: 사용 가능한 split 확인
 python3 -c "
 import datasets
-ds = datasets.load_dataset('json', data_files={'train': '../../datasets/raw/custom_benchmark/train.jsonl', 'test': '../../datasets/raw/custom_benchmark/test.jsonl'})
+ds = datasets.load_dataset('json', data_files={'train': '../../../datasets/raw/custom_benchmark/train.jsonl', 'test': '../../../datasets/raw/custom_benchmark/test.jsonl'})
 print('Available splits:', list(ds.keys()))
 "
-
-# 2단계: YAML 파일에서 올바른 split 사용
-# test_split: test  (또는 validation)
+# 위 코드는 eval/standard_evalchemy 디렉토리에서 실행해야 합니다.
 ```
 
-### 5. 메트릭 계산 에러
+### 5. 결과 파일이 생성되지 않을 때
 
-**증상**: `TypeError: unsupported operand type(s) for +: 'int' and 'list'`
+**증상**: `results/{run_id}` 디렉토리는 생성되었지만 내용이 비어있음
 
-**원인**: BLEU 같은 복잡한 메트릭에서 데이터 타입 불일치
-
-**해결 방법**:
-```yaml
-# 간단한 메트릭만 사용
-metric_list:
-  - metric: exact_match
-    aggregation: mean
-    higher_is_better: true
-# BLEU 메트릭 제거
-```
-
-### 6. 경로 문제
-
-**증상**: `FileNotFoundError: [Errno 2] No such file or directory`
+**원인**: VLLM 엔드포인트 연결 실패, 모델 추론 실패 등
 
 **해결 방법**:
 ```bash
-# 1단계: 현재 작업 디렉토리 확인
-pwd
-# /path/to/vllm-eval/eval/evalchemy 이어야 함
+# 1단계: 에러 로그 확인
+cat results/{run_id}/evalchemy_errors_{run_id}.log
 
-# 2단계: 상대 경로 확인
-ls -la ../../datasets/raw/custom_benchmark/
+# 2단계: VLLM 서버 상태 및 엔드포인트 URL 확인
+curl http://your-vllm-server:8000/v1/models
 
-# 3단계: 절대 경로 사용 (필요시)
-# YAML 파일에서 절대 경로로 변경
-```
-
-### 7. 권한 문제
-
-**증상**: `PermissionError: [Errno 13] Permission denied`
-
-**해결 방법**:
-```bash
-# 파일 권한 확인 및 수정
-chmod 644 datasets/raw/custom_benchmark/*.jsonl
-chmod 644 eval/evalchemy/tasks/*.yaml
-```
-
-### 8. 메모리 부족
-
-**증상**: `RuntimeError: CUDA out of memory` 또는 시스템 메모리 부족
-
-**해결 방법**:
-```bash
-# 1단계: CPU 모드 사용
-python3 -m lm_eval --device cpu
-
-# 2단계: 배치 크기 줄이기
-python3 -m lm_eval --batch_size 1
-
-# 3단계: 작은 모델 사용
-python3 -m lm_eval --model hf --model_args pretrained=distilgpt2
-```
-
-### 9. 네트워크 연결 문제
-
-**증상**: 모델 다운로드 실패
-
-**해결 방법**:
-```bash
-# 1단계: 인터넷 연결 확인
-ping huggingface.co
-
-# 2단계: 프록시 설정 (필요시)
-export HTTP_PROXY=http://your-proxy:port
-export HTTPS_PROXY=http://your-proxy:port
-
-# 3단계: 캐시 디렉토리 확인
-export HF_HOME=/path/to/cache
-```
-
-### 10. 일반적인 디버깅 팁
-
-```bash
-# 1. 상세 로그 출력
-export LOGLEVEL=DEBUG
-python3 -m lm_eval --include_path tasks --tasks custom_task_1 --limit 1
-
-# 2. Python 경로 확인
-python3 -c "import sys; print('\n'.join(sys.path))"
-
-# 3. 패키지 버전 확인
-pip list | grep -E "(lm-eval|datasets|transformers|torch)"
-
-# 4. 단계별 테스트
-# 4-1. 태스크 목록 확인
-python3 -m lm_eval --include_path tasks --tasks list
-
-# 4-2. 설정 확인
-python3 -m lm_eval --include_path tasks --tasks custom_task_1 --help
-
-# 4-3. 최소 실행
-python3 -m lm_eval --include_path tasks --model hf --model_args pretrained=gpt2 --tasks custom_task_1 --limit 1 --device cpu
+# 3단계: --log-level DEBUG 옵션으로 상세 로그 확인
+./run_evalchemy.sh --endpoint ... --log-level DEBUG
 ```
 
 ## 📚 참고 자료

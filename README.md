@@ -43,19 +43,15 @@ graph TD
 ## 📁 주요 폴더·파일 설명
 
 ### `.github/workflows/`
-- **`image-build.yml`** – deepeval, evalchemy, workflow-tools 이미지를 빌드해 GHCR에 `release-*` 태그로 푸시. Push 이벤트가 Argo Events 센서를 트리거
-- **`lint-test.yml`** – ruff (정적 분석) + pytest + 스키마 검증 수행
+- **`ci.yml`** – ruff (정적 분석) + pytest + 스키마 검증 수행
+- **`evalchemy-build.yml`, `standard-evalchemy-build.yml`, `vllm-benchmark-build.yml`** – 각 평가 환경에 맞는 Docker 이미지를 빌드하여 GHCR에 푸시합니다.
+- **`evalchemy-deploy.yml`, `standard-evalchemy-deploy.yml`, `vllm-benchmark-deploy.yml`** – 빌드된 이미지를 쿠버네티스 환경에 배포하는 워크플로우입니다.
 
 ### `charts/`
-Helm 차트로 인프라 버전을 고정하고 간편 업그레이드:
-- **`clickhouse/`** – Altinity 커뮤니티 차트를 기반으로 한 스타터
-- **`argo-workflows/`** – HA = 2 replicas 설정 서브차트
-- **`grafana/`** – "LLM Quality Overview" JSON 대시보드를 사전 로드
+Helm 차트를 사용하여 쿠버네티스 애플리케이션(ClickHouse, Grafana, Argo Workflows 등)을 패키징하고 배포를 관리합니다.
 
-### `infra/`
-- **`argo-events/`** – GHCR Webhook을 수신하는 Sensor & Trigger
-- **`argo-workflows/`** – 4-스텝 DAG(prepare-dataset→deepeval→evalchemy→aggregate)
-- **`teams-webhook/`** – Teams Webhook URL을 담은 Secret과 Adaptive Card 전송용 Job 템플릿
+### `k8s/`
+- **`evalchemy-job.yaml`, `standard-evalchemy-job.yaml`, `vllm-benchmark-job.yaml`** – Argo Workflows에서 사용할 각 평가 단계를 정의하는 쿠버네티스 Job/Workflow 템플릿입니다.
 
 ### `eval/`
 - **`deepeval_tests/`** – PyTest 스타일 스위트, DeepEval 커스텀 Metric 위치

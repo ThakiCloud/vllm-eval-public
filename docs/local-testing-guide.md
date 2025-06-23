@@ -140,7 +140,7 @@ cat > .env << 'EOF'
 # 테스트 환경 변수
 PYTHONPATH=.
 LOG_LEVEL=DEBUG
-EVAL_CONFIG_PATH=eval/evalchemy/configs/eval_config.json
+EVAL_CONFIG_PATH=configs/evalchemy.json
 OUTPUT_DIR=./test_results
 RUN_ID=local_test_$(date +%Y%m%d_%H%M%S)
 
@@ -209,7 +209,7 @@ echo "✅ 스키마 검증 완료"
 echo "Evalchemy 설정 검증 중..."
 python -c "
 import json
-with open('eval/evalchemy/configs/eval_config.json', 'r') as f:
+with open('configs/evalchemy.json', 'r') as f:
     config = json.load(f)
     print(f'✅ 설정 파일 유효: {len(config[\"benchmarks\"])}개 벤치마크 발견')
 "

@@ -50,7 +50,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 
 ### 2단계: CI 파이프라인 설정 (GitHub Actions)
 
-이 프로젝트의 CI/CD 파이프라인은 애플리케이션 코드와 Kubernetes 매니페스트를 **동일한 Git 저장소**에서 관리합니다. `.github/workflows/image-build.yml` 워크플로우는 벤치마크 관련 코드(예: `eval/` 디렉토리)가 변경되면 다음 작업을 자동으로 수행합니다.
+이 프로젝트의 CI/CD 파이프라인은 애플리케이션 코드와 Kubernetes 매니페스트를 **동일한 Git 저장소**에서 관리합니다. `.github/workflows/evalchemy-build.yml`과 같은 빌드 워크플로우는 벤치마크 관련 코드(예: `eval/` 디렉토리)가 변경되면 다음 작업을 자동으로 수행합니다.
 
 1.  변경된 코드에 해당하는 Docker 이미지를 빌드하여 `:latest` 태그로 컨테이너 레지스트리(GHCR)에 푸시합니다.
 2.  동일한 저장소 내의 `k8s/` 디렉토리에 있는 관련 Kubernetes 매니페스트 파일(예: `evalchemy-job.yaml`)을 수정합니다.
@@ -61,10 +61,10 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 #### 필요한 설정
 워크플로우가 저장소에 다시 푸시하려면 GitHub Actions의 기본 `GITHUB_TOKEN`에 쓰기 권한이 필요합니다. 저장소 `Settings > Actions > General`에서 `Workflow permissions`를 `Read and write permissions`으로 설정해야 합니다.
 
-아래는 `image-build.yml` 워크플로우에서 매니페스트를 업데이트하는 부분의 예시입니다.
+아래는 `evalchemy-build.yml` 워크플로우에서 매니페스트를 업데이트하는 부분의 예시입니다.
 
 ```yaml
-# .github/workflows/image-build.yml
+# .github/workflows/evalchemy-build.yml
 # ...
   - name: 🔄 Update K8s manifest to trigger Argo CD
     run: |
@@ -81,41 +81,17 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 # ...
 ```
 
-### 3단계: Argo CD Application 설정
+2.  **`configs/evalchemy.json` 업데이트**: `tasks` 목록에 실행할 태스크를 추가합니다. (수정 후 이미지 재빌드 필요)
+    ```json
+    {
+      "tasks": [
+        "custom_task_1",
+        "custom_task_2"
+       ]
+    }
+    ```
 
-Argo CD가 현재 Git 저장소의 `k8s/` 디렉토리를 모니터링하고 변경 사항을 클러스터에 동기화하도록 `Application` 리소스를 생성합니다.
-
-```bash
-# argocd-app.yaml 파일 생성
-cat > argocd-app.yaml << 'EOF'
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: vllm-evalchemy-job
-  namespace: argocd
-spec:
-  project: default
-  source:
-    # 현재 애플리케이션 Git 저장소 주소
-    repoURL: 'https://github.com/your-org/your-repo.git' 
-    targetRevision: HEAD
-    # 매니페스트가 위치한 경로
-    path: k8s 
-  destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: vllm-eval # 배포할 네임스페이스
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
-EOF
-
-# 생성된 파일을 클러스터에 적용
-kubectl apply -f argocd-app.yaml
-```
-또한, 매니페스트 파일(`k8s/evalchemy-job.yaml` 등)에서 `imagePullPolicy`를 `Always`로 설정해야 쿠버네티스가 항상 최신 버전의 `:latest` 이미지를 가져옵니다.
+3.  **`k8s/evalchemy-job.yaml` 수정**: `image` 필드를 새로 빌드한 이미지 주소로 변경합니다.
 
 ```yaml
 # k8s/evalchemy-job.yaml
@@ -124,8 +100,7 @@ spec:
     spec:
       containers:
         - name: evalchemy
-          image: your-registry/vllm-eval-evalchemy:latest
-          imagePullPolicy: Always # <-- 이 부분을 확인/추가하세요.
+          image: your-registry/vllm-eval-evalchemy:custom-task-v1
 ```
 
 이 방식을 통해 코드 푸시만으로 벤치마크 실행 및 업데이트가 완전히 자동화됩니다.
@@ -181,9 +156,9 @@ spec:
     }
     ```
 
--   **Prometheus 알림 규칙**: `custom_task_1`의 점수가 전날 대비 10% 이상 하락하면 알림을 보냅니다.
+-   **Prometheus 알림 규칙**: `custom_task_1`의 점수가 전날 대비 10% 이상 하락하면 알림을 보냅니다. (Alertmanager 설정 파일에 추가)
     ```yaml
-    # infra/monitoring/alert-rules.yaml
+    # 예시: alert-rules.yaml
     - alert: CustomTaskRegression
       expr: |
         avg_over_time(vllm_eval_exact_match{task='custom_task_1'}[1h]) < 

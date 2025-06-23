@@ -35,38 +35,26 @@
 git clone https://github.com/your-org/vllm-eval.git
 cd vllm-eval
 
-# 2. 개발 환경 설정
-make dev-setup
+# 2. Python 가상환경 생성 및 활성화
+python3.11 -m venv venv
+source venv/bin/activate
 
-# 3. Pre-commit 훅 설치
+# 3. 개발 의존성 설치
+pip install -r requirements-dev.txt
+pip install -r requirements-test.txt
+
+# 4. Pre-commit 훅 설치
 pre-commit install
 
-# 4. 로컬 클러스터 구성 (선택사항)
-make kind-deploy
-
 # 5. 테스트 실행으로 설정 확인
-make run-tests
+pytest eval/deepeval_tests/
 ```
 
 ### IDE 설정
 
-#### VS Code
-```json
-// .vscode/settings.json
-{
-  "python.defaultInterpreterPath": "./venv/bin/python",
-  "python.linting.enabled": true,
-  "python.linting.ruffEnabled": true,
-  "python.formatting.provider": "ruff",
-  "python.testing.pytestEnabled": true,
-  "python.testing.pytestArgs": ["eval/deepeval_tests/"]
-}
-```
-
-#### PyCharm
-- Interpreter: `./venv/bin/python`
-- Code style: Ruff
-- Test runner: pytest
+-   **Interpreter**: `./venv/bin/python`
+-   **Code style & Linter**: Ruff
+-   **Test runner**: pytest
 
 ## 🔄 기여 프로세스
 
@@ -90,11 +78,11 @@ git checkout -b fix/bug-description
 ### 3. 개발 및 테스트
 ```bash
 # 코드 변경 후 테스트
-make run-tests
+pytest
 
 # 린팅 및 포맷팅
-make lint
-make format
+ruff check . --fix
+ruff format .
 ```
 
 ### 4. 커밋
@@ -201,17 +189,9 @@ def safe_evaluate(model_endpoint: str) -> Optional[Dict[str, float]]:
 
 ### 테스트 구조
 
-```
-tests/
-├── unit/                 # 단위 테스트
-│   ├── test_metrics.py
-│   └── test_utils.py
-├── integration/          # 통합 테스트
-│   ├── test_deepeval.py
-│   └── test_evalchemy.py
-└── e2e/                 # E2E 테스트
-    └── test_workflow.py
-```
+-   **Deepeval 테스트**: `eval/deepeval_tests/` 디렉토리 안에 Pytest 기반의 테스트 코드가 위치합니다.
+    -   커스텀 메트릭 테스트: `eval/deepeval_tests/test_custom_metric.py`
+    -   RAG 평가 테스트: `eval/deepeval_tests/test_llm_rag.py`
 
 ### 테스트 작성 규칙
 
