@@ -138,7 +138,28 @@ CMD echo "=== Starting AceReason Evaluation Toolkit ===" && \
 LABEL description="Optimized lightweight Docker image for AceReason Toolkit - API mode only with network fixes"
 LABEL gpu.required="false"
 
-# 일반적인 실행
+# 도커 빌드
+# docker build -f docker/nvidia_eval.Dockerfile  -t nvidia-eval-standard --no-cache
+#
+# 실행 예시 [AIME, LCB 모두 평가]
+#   docker run -e API_BASE=http://host.docker.internal:port/v1 \
+#   -e MODEL_NAME=qwen3-8b \
+#   -e OUTPUT_FOLDER=output \
+#   -e EVAL_TYPE=both \
+#   -e OUT_SEQ_LEN=14000 \
+#   -v $(pwd)/output:/workspace/output \
+#   nvidia-eval-nvidia-eval-standard  
+#
+# 실행 예시 [AIME 평가]
+#   docker run -e API_BASE=http://host.docker.internal:port/v1 \
+#   -e MODEL_NAME=qwen3-8b \
+#   -e OUTPUT_FOLDER=output \
+#   -e EVAL_TYPE=aime \
+#   -e OUT_SEQ_LEN=14000 \
+#   -v $(pwd)/output:/workspace/output \
+#   nvidia-eval-nvidia-eval-standard  
+#
+# 실행 예시 [LCB 평가]
 #   docker run -e API_BASE=http://host.docker.internal:port/v1 \
 #   -e MODEL_NAME=qwen3-8b \
 #   -e OUTPUT_FOLDER=output \
@@ -146,11 +167,4 @@ LABEL gpu.required="false"
 #   -e OUT_SEQ_LEN=14000 \
 #   -v $(pwd)/output:/workspace/output \
 #   nvidia-eval-nvidia-eval-standard  
-#
-#
-#
-#
-#
-#
-#
 #
