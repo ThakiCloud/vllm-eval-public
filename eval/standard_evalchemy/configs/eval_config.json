@@ -59,6 +59,46 @@
         "enabled": false,
         "description": "SuperGLUE benchmark suite",
         "tasks": ["super_glue"]
+      },
+      "AMC23": {
+        "enabled": true,
+        "description": "AMC 2023 - American Mathematics Competitions",
+        "tasks": ["AMC23"]
+      },
+      "MATH500": {
+        "enabled": true,
+        "description": "MATH500 - Mathematical reasoning benchmark",
+        "tasks": ["MATH500"]
+      },
+      "GPQADiamond": {
+        "enabled": true,
+        "description": "GPQA Diamond - Graduate-level science questions",
+        "tasks": ["GPQADiamond"]
+      },
+      "hellaswag_ar": {
+        "enabled": true,
+        "description": "HellaSwag Arabic - Commonsense inference in Arabic",
+        "tasks": ["hellaswag_ar"]
+      },
+      "piqa_ar": {
+        "enabled": true,
+        "description": "PIQA Arabic - Physical interaction reasoning in Arabic",
+        "tasks": ["piqa_ar"]
+      },
+      "arabicmmlu": {
+        "enabled": true,
+        "description": "Arabic MMLU - Massive multitask language understanding in Arabic",
+        "tasks": ["arabicmmlu"]
+      },
+      "aexams": {
+        "enabled": true,
+        "description": "AEXAMS - Arabic exams benchmark",
+        "tasks": ["aexams"]
+      },
+      "copa_ar": {
+        "enabled": true,
+        "description": "COPA Arabic - Choice of plausible alternatives in Arabic",
+        "tasks": ["copa_ar"]
       }
     },
     
@@ -75,14 +115,12 @@
     },
     
     "evaluation_settings": {
-      "num_fewshot": 1,
-      "batch_size": 1,
-      "limit": 1,
+      "limit": 100,
       "output_format": "json",
       "log_samples": true,
       "include_path": true,
-      "apply_chat_template": true,
-      "max_tokens": 14000,
+      "apply_chat_template": false,
+      "max_tokens": 2000,
       "verbosity": "INFO",
       "desc" : ""
     },
@@ -102,7 +140,7 @@
     
     "tasks": {
       "AIME24": {
-        "enabled": true,
+        "enabled": false,
         "tasks": ["AIME24"],
         "description": "AIME 2024 Benchmark",
         "metrics": ["acc"],
@@ -219,6 +257,98 @@
         "log_samples": true,
         "priority": "medium",
         "timeout": 2400
+      },
+      
+      "AMC23": {
+        "enabled": true,
+        "tasks": ["AMC23"],
+        "description": "AMC 2023 - American Mathematics Competitions",
+        "metrics": ["acc"],
+        "output_path": "results/AMC23",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 3600
+      },
+      
+      "MATH500": {
+        "enabled": true,
+        "tasks": ["MATH500"],
+        "description": "MATH500 - Mathematical reasoning benchmark",
+        "metrics": ["acc"],
+        "output_path": "results/MATH500",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 3600
+      },
+      
+      "GPQADiamond": {
+        "enabled": true,
+        "tasks": ["GPQADiamond"],
+        "description": "GPQA Diamond - Graduate-level science questions",
+        "metrics": ["acc"],
+        "output_path": "results/GPQADiamond",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 3600
+      },
+      
+      "hellaswag_ar": {
+        "enabled": true,
+        "tasks": ["hellaswag_ar"],
+        "description": "HellaSwag Arabic - Commonsense inference in Arabic",
+        "metrics": ["acc", "acc_norm"],
+        "output_path": "results/hellaswag_ar",
+        "log_samples": true,
+        "priority": "high",
+        "timeout": 2400
+      },
+      
+      "piqa_ar": {
+        "enabled": true,
+        "tasks": ["piqa_ar"],
+        "description": "PIQA Arabic - Physical interaction reasoning in Arabic",
+        "metrics": ["acc", "acc_norm"],
+        "output_path": "results/piqa_ar",
+        "log_samples": true,
+        "priority": "high",
+        "max_tokens": 500,
+        "timeout": 2400
+      },
+      
+      "arabicmmlu": {
+        "enabled": true,
+        "tasks": ["arabicmmlu"],
+        "description": "Arabic MMLU - Massive multitask language understanding in Arabic",
+        "metrics": ["acc"],
+        "output_path": "results/arabicmmlu",
+        "log_samples": true,
+        "priority": "high",
+        "max_tokens": 500,
+        "timeout": 3600
+      },
+      
+      "aexams": {
+        "enabled": true,
+        "tasks": ["aexams"],
+        "description": "AEXAMS - Arabic exams benchmark",
+        "metrics": ["acc"],
+        "output_path": "results/aexams",
+        "log_samples": true,
+        "priority": "high",
+        "max_tokens": 500,
+        "timeout": 2400
+      },
+      
+      "copa_ar": {
+        "enabled": true,
+        "tasks": ["copa_ar"],
+        "description": "COPA Arabic - Choice of plausible alternatives in Arabic",
+        "metrics": ["acc"],
+        "output_path": "results/copa_ar",
+        "log_samples": true,
+        "max_tokens": 500,
+        "priority": "medium",
+        "timeout": 1800
       }
     },
     

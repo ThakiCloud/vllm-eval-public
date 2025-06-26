@@ -106,9 +106,7 @@ USER evaluser
 ENV EVAL_CONFIG_PATH="/app/evalchemy-src/configs/eval_config.json" \
     VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
     OUTPUT_DIR="/app/evalchemy-src/results" \
-    BATCH_SIZE="1" \
     MAX_TOKENS="14000" \
-    NUM_FEWSHOT="1" \
     LIMIT="1" \
     LOG_LEVEL="INFO" \
     PYTHONPATH="/app/evalchemy-src:/app"
@@ -148,7 +146,7 @@ CMD ["--help"]
 # docker run --rm \
 #   --network host \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
-#   -e VLLM_MODEL_ENDPOINT="http://localhost:8000/v1/completions" \
+#   -e VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
 #   vllm-eval/evalchemy:latest
 #
 # 4. 디버깅 모드 (인터랙티브):
