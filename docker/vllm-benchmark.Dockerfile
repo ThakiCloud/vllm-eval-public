@@ -64,8 +64,8 @@ ENV VLLM_ENDPOINT="http://localhost:8000" \
     ENDPOINT_PATH="/v1/chat/completions" \
     MODEL_NAME="Qwen/Qwen3-8B" \
     SERVED_MODEL_NAME="qwen3-8b" \
-    OUTPUT_DIR="/results" \
-    PARSED_DIR="/parsed" \
+    OUTPUT_DIR="/app/results" \
+    PARSED_DIR="/app/parsed" \
     NUM_PROMPTS="100" \
     REQUEST_RATE="1.0" \
     MAX_CONCURRENCY="1" \
@@ -77,7 +77,7 @@ ENV VLLM_ENDPOINT="http://localhost:8000" \
     METRIC_PERCENTILES="25,50,75,90,95,99" \
     LOG_LEVEL="INFO"
 
-VOLUME ["/results", "/parsed"]
+VOLUME ["/app/results", "/app/parsed"]
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD /app/healthcheck.sh
