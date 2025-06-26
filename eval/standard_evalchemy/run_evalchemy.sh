@@ -43,7 +43,7 @@ NC='\033[0m' # No Color
 #
 
 # Default values
-DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/configs/eval_config.json"
+DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/standard_evalchemy.json"
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/logs"
 DEFAULT_BATCH_SIZE="1"
 DEFAULT_MAX_TOKENS="14000"
@@ -556,6 +556,71 @@ run_evalchemy_evaluation() {
     fi
 }
 
+standardize_results() {
+    local results_dir="$1"
+    local parsed_dir="${SCRIPT_DIR}/parsed"
+    local standardize_script_path="${SCRIPT_DIR}/../../scripts/standardize_evalchemy.py"
+
+    log INFO "Standardizing evaluation results..."
+
+    if [[ ! -f "$standardize_script_path" ]]; then
+        log ERROR "Standardization script not found at: $standardize_script_path"
+        return 1
+    fi
+
+    mkdir -p "$parsed_dir"
+    log INFO "Standardized results will be saved in: $parsed_dir"
+
+    local result_files=("$results_dir"/*_results*.json)
+    if [[ ${#result_files[@]} -eq 0 || ! -e "${result_files[0]}" ]]; then
+        log WARN "No result files found to standardize in $results_dir"
+        return 0
+    fi
+
+    log INFO "Found ${#result_files[@]} result files to standardize."
+
+    for item in "${result_files[@]}"; do
+        local input_to_standardize=""
+        local base_stem=""
+
+        if [[ -d "$item" ]]; then
+            # Handle directory output (from --log_samples)
+            # Find the result file, which may have a timestamp (e.g., results_20240101.json).
+            result_file_path=$(find "$item" -name 'results*.json' -print -quit)
+
+            if [[ -n "$result_file_path" && -f "$result_file_path" ]]; then
+                input_to_standardize="$result_file_path"
+                local dirname
+                dirname=$(basename "$item")
+                base_stem="${dirname%_results.json}"
+            else
+                log WARN "No result file matching 'results*.json' found in directory: $item"
+                continue
+            fi
+        elif [[ -f "$item" ]]; then
+            # Handle file output (original expectation)
+            input_to_standardize="$item"
+            local filename
+            filename=$(basename "$item")
+            base_stem="${filename%_results.json}"
+        fi
+
+        if [[ -n "$input_to_standardize" ]]; then
+            local output_file="$parsed_dir/${RUN_ID}_${base_stem}.json"
+            
+            log INFO "Standardizing $input_to_standardize -> $output_file"
+
+            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID"; then
+                log INFO "Successfully standardized $base_stem"
+            else
+                log ERROR "Failed to standardize $base_stem"
+            fi
+        fi
+    done
+
+    log INFO "Standardization process complete. Parsed files are in: $parsed_dir"
+}
+
 main() {
     # Set up signal handlers
     trap cleanup EXIT INT TERM
@@ -688,6 +753,8 @@ main() {
     # Environment setup
     prepare_environment
     
+    standardize_results "$RESULTS_DIR"
+
     # Run evaluation
     local evaluation_start_time=$(date +%s)
     
