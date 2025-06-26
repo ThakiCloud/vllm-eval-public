@@ -56,9 +56,9 @@ VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
 EVAL_CONFIG_PATH="${EVAL_CONFIG_PATH:-$DEFAULT_CONFIG_PATH}"
 OUTPUT_DIR="${OUTPUT_DIR:-$DEFAULT_OUTPUT_DIR}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-BATCH_SIZE="${BATCH_SIZE:-$DEFAULT_BATCH_SIZE}"
+BATCH_SIZE="${BATCH_SIZE:-}"
 MAX_TOKENS="${MAX_TOKENS:-$DEFAULT_MAX_TOKENS}"
-NUM_FEWSHOT="${NUM_FEWSHOT:-$DEFAULT_NUM_FEWSHOT}"
+NUM_FEWSHOT="${NUM_FEWSHOT:-}"
 LIMIT="${LIMIT:-$DEFAULT_LIMIT}"
 LOG_LEVEL="${LOG_LEVEL:-$DEFAULT_LOG_LEVEL}"
 
@@ -113,8 +113,8 @@ get_enabled_tasks() {
     
     if [[ -n "$enabled_groups" ]]; then
         log INFO "Found enabled tasks from benchmark groups: $enabled_groups" >&2
-        # Convert newlines to commas for task list
-        echo "$enabled_groups" | tr '\n' ',' | sed 's/,$//'
+        # Return as space-separated list for individual processing
+        echo "$enabled_groups" | tr '\n' ' '
         return 0
     fi
     
@@ -123,14 +123,28 @@ get_enabled_tasks() {
     
     if [[ -n "$enabled_tasks" ]]; then
         log INFO "Found enabled individual tasks: $enabled_tasks" >&2
-        # Convert newlines to commas for task list
-        echo "$enabled_tasks" | tr '\n' ',' | sed 's/,$//'
+        # Return as space-separated list for individual processing
+        echo "$enabled_tasks" | tr '\n' ' '
         return 0
     fi
     
     # Fallback if nothing is enabled
     log WARN "No enabled benchmark groups or tasks found, using AIME24 as fallback" >&2
     echo "AIME24"
+}
+
+get_task_config() {
+    local config_file="$1"
+    local task_name="$2"
+    local config_key="$3"
+    local default_value="$4"
+    
+    local value=$(jq -r ".tasks.\"$task_name\".\"$config_key\" // \"$default_value\"" "$config_file" 2>/dev/null)
+    if [[ "$value" == "null" ]]; then
+        echo "$default_value"
+    else
+        echo "$value"
+    fi
 }
 
 get_config_value() {
@@ -147,17 +161,23 @@ load_config_values() {
     
     log INFO "Loading configuration values from: $config_file"
     
-    # Override defaults with config file values if not set via command line
-    if [[ "$BATCH_SIZE" == "$DEFAULT_BATCH_SIZE" ]]; then
-        BATCH_SIZE=$(get_config_value "$config_file" ".evaluation_settings.batch_size" "$DEFAULT_BATCH_SIZE")
+    # Override with config file values if not set via command line
+    if [[ -z "$BATCH_SIZE" ]]; then
+        local config_batch_size=$(get_config_value "$config_file" ".evaluation_settings.batch_size" "")
+        if [[ -n "$config_batch_size" && "$config_batch_size" != "null" ]]; then
+            BATCH_SIZE="$config_batch_size"
+        fi
     fi
     
     if [[ "$MAX_TOKENS" == "$DEFAULT_MAX_TOKENS" ]]; then
         MAX_TOKENS=$(get_config_value "$config_file" ".evaluation_settings.max_tokens" "$DEFAULT_MAX_TOKENS")
     fi
     
-    if [[ "$NUM_FEWSHOT" == "$DEFAULT_NUM_FEWSHOT" ]]; then
-        NUM_FEWSHOT=$(get_config_value "$config_file" ".evaluation_settings.num_fewshot" "$DEFAULT_NUM_FEWSHOT")
+    if [[ -z "$NUM_FEWSHOT" ]]; then
+        local config_num_fewshot=$(get_config_value "$config_file" ".evaluation_settings.num_fewshot" "")
+        if [[ -n "$config_num_fewshot" && "$config_num_fewshot" != "null" ]]; then
+            NUM_FEWSHOT="$config_num_fewshot"
+        fi
     fi
     
     if [[ "$LIMIT" == "$DEFAULT_LIMIT" ]]; then
@@ -168,7 +188,7 @@ load_config_values() {
         LOG_LEVEL=$(get_config_value "$config_file" ".evaluation_settings.verbosity" "$DEFAULT_LOG_LEVEL")
     fi
     
-    log DEBUG "Configuration loaded - Batch size: $BATCH_SIZE, Max tokens: $MAX_TOKENS, Few-shot: $NUM_FEWSHOT, Limit: $LIMIT, Log level: $LOG_LEVEL"
+    log DEBUG "Configuration loaded - Batch size: ${BATCH_SIZE:-'not set'}, Max tokens: $MAX_TOKENS, Few-shot: ${NUM_FEWSHOT:-'not set'}, Limit: $LIMIT, Log level: $LOG_LEVEL"
 }
 
 show_usage() {
@@ -250,7 +270,8 @@ list_tasks() {
     echo ""
     echo -e "${GREEN}Currently Enabled Tasks:${NC}"
     local enabled_tasks=$(get_enabled_tasks "$config_file")
-    echo "$enabled_tasks"
+    # Convert space-separated to comma-separated for display
+    echo "$enabled_tasks" | tr ' ' ','
 }
 
 show_version() {
@@ -374,11 +395,11 @@ prepare_environment() {
     log INFO "Environment prepared, results will be saved to: $RESULTS_DIR"
 }
 
-run_evalchemy_evaluation() {
-    local tasks="$1"
+run_single_task_evaluation() {
+    local task="$1"
     local endpoint="$2"
     
-    log INFO "Running evalchemy evaluation with tasks: $tasks"
+    log INFO "Running evalchemy evaluation for task: $task"
     
     # Read model configuration from config file - use simple defaults for now
     local model_name="qwen3-8b"
@@ -389,54 +410,149 @@ run_evalchemy_evaluation() {
     
     log DEBUG "Model config: name=$model_name, tokenizer=$tokenizer, backend=$tokenizer_backend"
     
+    # Get task-specific configuration
+    local task_max_tokens=$(get_task_config "$EVAL_CONFIG_PATH" "$task" "max_tokens" "$MAX_TOKENS")
+    local task_limit=$(get_task_config "$EVAL_CONFIG_PATH" "$task" "limit" "$LIMIT")
+    local task_log_samples=$(get_task_config "$EVAL_CONFIG_PATH" "$task" "log_samples" "false")
+    local task_timeout=$(get_task_config "$EVAL_CONFIG_PATH" "$task" "timeout" "3600")
+    
+    # Create task-specific output directory
+    local task_results_dir="${RESULTS_DIR}/${task}"
+    mkdir -p "$task_results_dir"
+    
+    # Create task-specific log file
+    local task_log_file="${task_results_dir}/evalchemy_${task}_${RUN_ID}.log"
+    
+    log INFO "Task-specific config for $task: max_tokens=$task_max_tokens, limit=$task_limit, log_samples=$task_log_samples, timeout=$task_timeout"
+    
     # Build command arguments
     local cmd_args=(
         "--model" "curator"
-        "--tasks" "$tasks"
+        "--tasks" "$task"
         "--model_args" "base_url=${endpoint},model=${model_name},tokenizer=${tokenizer},tokenizer_backend=${tokenizer_backend}"
-        "--num_fewshot" "$NUM_FEWSHOT"
-        "--batch_size" "$BATCH_SIZE"
-        "--output_path" "$RESULTS_DIR/"
-        "--limit" "$LIMIT"
+        "--output_path" "$task_results_dir/"
+        "--limit" "$task_limit"
         "--apply_chat_template" "True"
-        "--max_tokens" "$MAX_TOKENS"
+        "--max_tokens" "$task_max_tokens"
         "--verbosity" "$LOG_LEVEL"
     )
+    
+    # Add optional arguments only if they are set (global or task-specific)
+    if [[ -n "$NUM_FEWSHOT" ]]; then
+        log DEBUG "Adding num_fewshot argument: $NUM_FEWSHOT"
+        cmd_args+=("--num_fewshot" "$NUM_FEWSHOT")
+    else
+        log DEBUG "NUM_FEWSHOT is empty, not adding num_fewshot argument"
+    fi
+    
+    if [[ -n "$BATCH_SIZE" ]]; then
+        log DEBUG "Adding batch_size argument: $BATCH_SIZE"
+        cmd_args+=("--batch_size" "$BATCH_SIZE")
+    else
+        log DEBUG "BATCH_SIZE is empty, not adding batch_size argument"
+    fi
     
     # Add debug flag if log level is DEBUG
     if [[ "$LOG_LEVEL" == "DEBUG" ]]; then
         cmd_args+=("--debug")
     fi
     
-    # Add log samples if enabled in config
-    local log_samples=$(get_config_value "$EVAL_CONFIG_PATH" ".evaluation_settings.log_samples" "false")
-    if [[ "$log_samples" == "true" ]]; then
+    # Add log samples if enabled for this task
+    if [[ "$task_log_samples" == "true" ]]; then
         cmd_args+=("--log_samples")
     fi
     
-    # Run evaluation
+    # Run evaluation with timeout
     local evaluation_start_time=$(date +%s)
     
-    log INFO "Executing: python -m eval.eval ${cmd_args[*]}"
+    log INFO "Executing for $task: python -m eval.eval ${cmd_args[*]}"
     
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log INFO "[DRY RUN] Would run: python -m eval.eval ${cmd_args[*]}"
+        log INFO "[DRY RUN] Would run for $task: python -m eval.eval ${cmd_args[*]}"
         return 0
     fi
     
-    # Execute evaluation
-    if python -m eval.eval "${cmd_args[@]}" \
-        > "$LOG_FILE" 2>&1; then
+    # Execute evaluation with timeout
+    if timeout "$task_timeout" python -m eval.eval "${cmd_args[@]}" \
+        > "$task_log_file" 2>&1; then
         
         local evaluation_end_time=$(date +%s)
         local evaluation_duration=$((evaluation_end_time - evaluation_start_time))
         
-        log INFO "Evaluation completed in ${evaluation_duration}s"
+        log INFO "Task $task completed in ${evaluation_duration}s"
+        
+        # Append task log to main log
+        echo "=== Task: $task ===" >> "$LOG_FILE"
+        cat "$task_log_file" >> "$LOG_FILE"
+        echo "" >> "$LOG_FILE"
+        
         return 0
     else
-        log ERROR "Evaluation failed"
-        log ERROR "Check log file: $LOG_FILE"
+        local exit_code=$?
+        if [[ $exit_code -eq 124 ]]; then
+            log ERROR "Task $task timed out after ${task_timeout}s"
+        else
+            log ERROR "Task $task failed with exit code $exit_code"
+        fi
+        log ERROR "Check task log file: $task_log_file"
+        
+        # Append error log to main log
+        echo "=== Task: $task (FAILED) ===" >> "$LOG_FILE"
+        cat "$task_log_file" >> "$LOG_FILE"
+        echo "" >> "$LOG_FILE"
+        
         return 1
+    fi
+}
+
+run_evalchemy_evaluation() {
+    local tasks_string="$1"
+    local endpoint="$2"
+    
+    # Convert tasks string to array
+    local tasks_array
+    read -ra tasks_array <<< "$tasks_string"
+    
+    log INFO "Running evalchemy evaluation with ${#tasks_array[@]} tasks: ${tasks_array[*]}"
+    
+    local failed_tasks=()
+    local successful_tasks=()
+    local total_start_time=$(date +%s)
+    
+    # Run each task individually
+    for task in "${tasks_array[@]}"; do
+        # Skip empty task names
+        if [[ -z "$task" ]]; then
+            continue
+        fi
+        
+        log INFO "Starting evaluation for task: $task"
+        
+        if run_single_task_evaluation "$task" "$endpoint"; then
+            successful_tasks+=("$task")
+            log INFO "✅ Task $task completed successfully"
+        else
+            failed_tasks+=("$task")
+            log ERROR "❌ Task $task failed"
+        fi
+        
+        log INFO "Progress: $((${#successful_tasks[@]} + ${#failed_tasks[@]}))/${#tasks_array[@]} tasks processed"
+    done
+    
+    local total_end_time=$(date +%s)
+    local total_duration=$((total_end_time - total_start_time))
+    
+    # Summary
+    log INFO "=== Evaluation Summary ==="
+    log INFO "Total duration: ${total_duration}s"
+    log INFO "Successful tasks (${#successful_tasks[@]}): ${successful_tasks[*]}"
+    
+    if [[ ${#failed_tasks[@]} -gt 0 ]]; then
+        log ERROR "Failed tasks (${#failed_tasks[@]}): ${failed_tasks[*]}"
+        return 1
+    else
+        log INFO "All tasks completed successfully!"
+        return 0
     fi
 }
 
