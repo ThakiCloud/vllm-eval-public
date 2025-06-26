@@ -2,6 +2,7 @@ import json
 import argparse
 import requests
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 
