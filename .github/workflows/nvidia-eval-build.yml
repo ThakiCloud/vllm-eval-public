@@ -30,6 +30,7 @@ jobs:
               - 'scripts/standardize_aime_results.py'
               - 'scripts/standardize_livecodebench_results.py'
               - 'eval/nvidia_eval/**'
+              - '.github/**'
 
   build-nvidia-eval:
     name: 🏗️ Build and Push NVIDIA Eval Image
