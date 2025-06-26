@@ -1,8 +1,46 @@
 import json
 import argparse
 import sys
+import requests
 from pathlib import Path
 from datetime import datetime
+
+def send_to_endpoint(url: str, data: str, data_description: str, run_id: str, benchmark_name: str, timestamp: str, model_id: str, tokenizer_id: str, source: str):
+    """
+    지정된 URL로 데이터를 POST 요청으로 전송합니다.
+    
+    Parameters:
+    - url (str): 전송할 엔드포인트 URL
+    - data (str): 전송할 JSON 데이터 (stringified)
+    - data_description (str): 로그/출력용 설명
+    - run_id (str): 실행 식별자
+    - benchmark_name (str): 벤치마크 이름
+    - timestamp (str): 타임스탬프
+    - model_id (str): 모델 이름
+    - tokenizer_id (str): 토크나이저 이름
+    - source (str): 모델 소스
+    """
+    try:
+        # 최종 전송할 JSON payload 구성
+        payload = {
+            "run_id": run_id,
+            "benchmark_name": benchmark_name,
+            "data": json.loads(data),  # 문자열로 전달된 JSON을 실제 객체로 변환
+            "timestamp": timestamp,
+            "model_id": model_id,
+            "tokenizer_id": tokenizer_id,
+            "source": source
+        }
+
+        headers = {'Content-Type': 'application/json; charset=utf-8'}
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        print(f"✅ Successfully sent {data_description} to: {url}")
+
+    except requests.RequestException as e:
+        print(f"⚠️ Warning: Failed to send {data_description} to {url}. Error: {e}", file=sys.stderr)
+    except json.JSONDecodeError as je:
+        print(f"❌ Invalid JSON format in 'data' argument. Error: {je}", file=sys.stderr)
 
 def parse_model_args(model_args_str: str) -> dict:
     """'key1=value1,key2=value2' 형식의 문자열을 파싱하여 딕셔너리로 반환합니다."""
@@ -20,10 +58,12 @@ def parse_model_args(model_args_str: str) -> dict:
 def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str = None):
     """
     Evalchemy (lm-evaluation-harness) 벤치마크 결과 JSON 파일을 표준 형식으로 변환합니다.
+    결과를 파일에 저장하고, 선택적으로 원본 및 변환된 데이터를 원격 URL로 전송합니다.
     """
     try:
         with open(input_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+            raw_input_data = f.read()
+            data = json.loads(raw_input_data)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error reading or parsing file {input_path}: {e}", file=sys.stderr)
         sys.exit(1)
@@ -64,7 +104,8 @@ def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str 
     }
 
     # --- Results 데이터 추출 ---
-    results_data = data.get("results", {})
+    results_data = data.get("results", {}).get(benchmark_name, {})
+    results_data.pop("alias", None) # 'alias' 키는 필요 없으므로 제거
 
     # --- Performance 데이터 추출 ---
     performance = {
@@ -91,10 +132,17 @@ def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str 
 
     # --- 파일로 저장 ---
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    standardized_data_json = json.dumps(standardized_data, indent=2, ensure_ascii=False)
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(standardized_data, f, indent=2, ensure_ascii=False)
+        f.write(standardized_data_json)
     
     print(f"Standardized Evalchemy results saved to: {output_path}")
+
+    url = os.environ.get("BACKEND_API", "http://localhost:8000")
+    input_url = f"{url}/raw_input"
+    send_to_endpoint(input_url, raw_input_data, "original input data", run_id, benchmark_name, meta["timestamp"], meta["model"]["id"], meta["model"]["tokenizer_id"], meta["model"]["source"])  
+    output_url = f"{url}/standardized_output"
+    send_to_endpoint(output_url, standardized_data_json, "standardized output data", run_id, benchmark_name, meta["timestamp"], meta["model"]["id"], meta["model"]["tokenizer_id"], meta["model"]["source"])
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ def download_livecodebench():
 
     try:
         # Load the dataset
-        dataset = load_dataset("livecodebench/code_generation_lite", version_tag="release_v6")
+        dataset = load_dataset("livecodebench/code_generation_lite", version_tag="release_v6", trust_remote_code=True)
 
         # Get the test split
         test_data = dataset['test']
