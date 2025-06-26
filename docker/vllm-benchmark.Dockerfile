@@ -54,7 +54,9 @@ RUN cp /app/scripts/*.sh /app/ && \
     chmod +x /app/benchmarks/benchmark_serving.py && \
     printf '#!/bin/bash\npython -c "import requests; print(\\"Ready\\")"' > /app/healthcheck.sh && \
     chmod +x /app/healthcheck.sh
-    mkdir -p /app/results && chmod 777 /app/results
+
+RUN mkdir -p /app/results && chmod 777 /app/results
+RUN mkdir -p /app/parsed && chmod 777 /app/parsed
 
 RUN useradd --create-home --shell /bin/bash benchuser && \
     chown -R benchuser:benchuser /app /opt/venv
