@@ -607,7 +607,7 @@ standardize_results() {
     mkdir -p "$parsed_dir"
     log INFO "Standardized results will be saved in: $parsed_dir"
 
-    local result_files=("$results_dir"/*_results*.json)
+    local result_files=($(find "$results_dir" -type f -name '*results*.json'))
     if [[ ${#result_files[@]} -eq 0 || ! -e "${result_files[0]}" ]]; then
         log WARN "No result files found to standardize in $results_dir"
         return 0

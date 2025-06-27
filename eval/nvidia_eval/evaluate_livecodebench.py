@@ -192,7 +192,7 @@ def compute_accuracy(question_path, generation_path, timeout=5):
         total += 1
 
 
-    months = json.load(open("data/livecodebench_split.json", "r"))
+    # months = json.load(open("data/livecodebench_split.json", "r"))
 
     mp = {}
     for item in records:

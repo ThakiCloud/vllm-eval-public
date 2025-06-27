@@ -1,4 +1,4 @@
-name: 🐳 Build VLLM Benchmark Image
+name: 🐳 Build NVIDIA Eval Image
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      vllm-benchmark: ${{ steps.filter.outputs.vllm-benchmark }}
+      nvidia-eval: ${{ steps.filter.outputs.nvidia-eval }}
 
     steps:
       - uses: actions/checkout@v4
@@ -25,16 +25,16 @@ jobs:
         id: filter
         with:
           filters: |
-            vllm-benchmark:
-              - 'docker/vllm-benchmark.Dockerfile'
-              - 'scripts/standardize_vllm_benchmark.py'
-              - 'eval/vllm-benchmark/**'
-              - 'configs/vllm_benchmark.yaml'
+            nvidia-eval:
+              - 'docker/nvidia_eval.Dockerfile'
+              - 'scripts/standardize_aime_results.py'
+              - 'scripts/standardize_livecodebench_results.py'
+              - 'eval/nvidia_eval/**'
 
-  build-vllm-benchmark:
-    name: 🏗️ Build and Push VLLM Benchmark Image
+  build-nvidia-eval:
+    name: 🏗️ Build and Push NVIDIA Eval Image
     needs: [changes]
-    if: needs.changes.outputs.vllm-benchmark == 'true'
+    if: needs.changes.outputs.nvidia-eval == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -46,7 +46,7 @@ jobs:
 
       - name: ⚙️ Set lowercase image name
         id: set_lowercase_name
-        run: echo "name=$(echo '${{ env.IMAGE_NAME }}-vllm-benchmark' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}-nvidia-eval' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: ⚙️ Generate release tag
         if: github.event_name != 'pull_request'
@@ -69,7 +69,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/vllm-benchmark.Dockerfile
+          file: ./docker/nvidia_eval.Dockerfile
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
@@ -84,8 +84,11 @@ jobs:
       - name: ✅ Image Summary
         if: github.event_name != 'pull_request'
         run: |
-          echo "### ⚗️ VLLM Benchmark Image Built and Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧠 NVIDIA Eval Image Built and Pushed" >> $GITHUB_STEP_SUMMARY
           echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
           echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
           echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ github.sha }}`" >> $GITHUB_STEP_SUMMARY
-          echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.generate_tag.outputs.tag }}`" >> $GITHUB_STEP_SUMMARY 
+          echo "`${{ env.REGISTRY }}/${{ steps.set_lowercase_name.outputs.name }}:${{ steps.generate_tag.outputs.tag }}`" >> $GITHUB_STEP_SUMMARY
+          echo "**Supported Benchmarks:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧮 AIME (American Invitational Mathematics Examination)" >> $GITHUB_STEP_SUMMARY
+          echo "- 💻 LiveCodeBench (Live Coding Benchmark)" >> $GITHUB_STEP_SUMMARY 
