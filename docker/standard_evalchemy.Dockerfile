@@ -92,7 +92,7 @@ RUN pip install --no-cache-dir datasets transformers accelerate
 RUN pip install --no-cache-dir bespokelabs-curator
 
 # 평가 설정 파일들을 올바른 위치에 복사
-RUN mkdir -p /app/evalchemy-src/
+RUN mkdir -p /app/evalchemy-src/results
 COPY eval/standard_evalchemy/ /app/eval/standard_evalchemy/
 COPY configs/standard_evalchemy.json /app/configs/standard_evalchemy.json
 COPY scripts/standardize_evalchemy.py /app/scripts/standardize_evalchemy.py
@@ -110,7 +110,8 @@ ENV EVAL_CONFIG_PATH="/app/configs/standard_evalchemy.json" \
     MAX_TOKENS="14000" \
     LIMIT="1" \
     LOG_LEVEL="INFO" \
-    PYTHONPATH="/app/evalchemy-src:/app"
+    PYTHONPATH="/app/evalchemy-src:/app" \
+    BACKEND_API="http://model-benchmark-backend-svc:8000"
 
 # 헬스체크 설정
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
@@ -121,7 +122,6 @@ RUN chmod +x /app/eval/standard_evalchemy/run_evalchemy.sh
 
 # ENTRYPOINT와 CMD 설정 - 인자 전달 가능하도록
 ENTRYPOINT ["/app/eval/standard_evalchemy/run_evalchemy.sh"]
-CMD ["--help"]
 
 #
 # Example docker run command:
@@ -135,7 +135,7 @@ CMD ["--help"]
 #
 # 1. 이미지 빌드:
 # docker build --build-arg CACHEBUST="$(date +%s)" -f docker/evalchemy.Dockerfile -t vllm-eval/evalchemy:latest .
-#
+#-v $(pwd)/parsed:/app/eval/standard_evalchemy/parsed
 # 2. 기본 실행 (결과를 호스트에 마운트):
 # docker run --rm \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \

@@ -6,7 +6,7 @@
   
   "benchmarks": {
     "AIME24": {
-      "enabled": true,
+      "enabled": false,
       "description": "AIME 2024 Benchmark",
       "tasks": ["AIME24"]
     },
@@ -61,22 +61,22 @@
       "tasks": ["super_glue"]
     },
     "AMC23": {
-      "enabled": true,
+      "enabled": false,
       "description": "AMC 2023 - American Mathematics Competitions",
       "tasks": ["AMC23"]
     },
     "MATH500": {
-      "enabled": true,
+      "enabled": false,
       "description": "MATH500 - Mathematical reasoning benchmark",
       "tasks": ["MATH500"]
     },
     "GPQADiamond": {
-      "enabled": true,
+      "enabled": false,
       "description": "GPQA Diamond - Graduate-level science questions",
       "tasks": ["GPQADiamond"]
     },
     "hellaswag_ar": {
-      "enabled": true,
+      "enabled": false,
       "description": "HellaSwag Arabic - Commonsense inference in Arabic",
       "tasks": ["hellaswag_ar"]
     },
@@ -86,17 +86,17 @@
       "tasks": ["piqa_ar"]
     },
     "arabicmmlu": {
-      "enabled": true,
+      "enabled": false,
       "description": "Arabic MMLU - Massive multitask language understanding in Arabic",
       "tasks": ["arabicmmlu"]
     },
     "aexams": {
-      "enabled": true,
+      "enabled": false,
       "description": "AEXAMS - Arabic exams benchmark",
       "tasks": ["aexams"]
     },
     "copa_ar": {
-      "enabled": true,
+      "enabled": false,
       "description": "COPA Arabic - Choice of plausible alternatives in Arabic",
       "tasks": ["copa_ar"]
     }
@@ -118,7 +118,7 @@
     "limit": 100,
     "output_format": "json",
     "log_samples": true,
-    "include_path": true,
+    "include_path": false,
     "apply_chat_template": false,
     "max_tokens": 2000,
     "verbosity": "INFO",
@@ -260,7 +260,7 @@
     },
     
     "AMC23": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["AMC23"],
       "description": "AMC 2023 - American Mathematics Competitions",
       "metrics": ["acc"],
@@ -271,7 +271,7 @@
     },
     
     "MATH500": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["MATH500"],
       "description": "MATH500 - Mathematical reasoning benchmark",
       "metrics": ["acc"],
@@ -282,7 +282,7 @@
     },
     
     "GPQADiamond": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["GPQADiamond"],
       "description": "GPQA Diamond - Graduate-level science questions",
       "metrics": ["acc"],
@@ -293,7 +293,7 @@
     },
     
     "hellaswag_ar": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["hellaswag_ar"],
       "description": "HellaSwag Arabic - Commonsense inference in Arabic",
       "metrics": ["acc", "acc_norm"],
@@ -316,7 +316,7 @@
     },
     
     "arabicmmlu": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["arabicmmlu"],
       "description": "Arabic MMLU - Massive multitask language understanding in Arabic",
       "metrics": ["acc"],
@@ -328,7 +328,7 @@
     },
     
     "aexams": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["aexams"],
       "description": "AEXAMS - Arabic exams benchmark",
       "metrics": ["acc"],
@@ -340,7 +340,7 @@
     },
     
     "copa_ar": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["copa_ar"],
       "description": "COPA Arabic - Choice of plausible alternatives in Arabic",
       "metrics": ["acc"],
@@ -381,12 +381,12 @@
     "parallel_execution": false,
     "max_parallel_tasks": 1,
     "timeout_per_task": 3600,
-    "retry_failed_tasks": true,
+    "retry_failed_tasks": false,
     "max_retries": 2,
     "retry_delay": 60,
-    "save_intermediate_results": true,
+    "save_intermediate_results": false,
     "cleanup_on_failure": false,
-    "verbose": true,
+    "verbose": false,
     "log_level": "INFO",
     "api_rate_limit": {
       "requests_per_minute": 60,
@@ -397,23 +397,23 @@
   
   "output_config": {
     "base_output_dir": "/tmp/vllm_eval_results",
-    "save_predictions": true,
-    "save_metrics": true,
-    "save_logs": true,
+    "save_predictions": false,
+    "save_metrics": false,
+    "save_logs": false,
     "compress_outputs": false,
     "output_format": "json",
-    "include_metadata": true,
-    "timestamp_outputs": true
+    "include_metadata": false,
+    "timestamp_outputs": false
   },
   
   "quality_checks": {
     "min_accuracy_threshold": 0.1,
     "max_runtime_hours": 2,
-    "check_output_format": true,
-    "validate_metrics": true,
-    "detect_anomalies": true,
+    "check_output_format": false,
+    "validate_metrics": false,
+    "detect_anomalies": false,
     "anomaly_threshold": 0.5,
-    "api_response_validation": true
+    "api_response_validation": false
   },
   
   "benchmark_groups": {
@@ -421,7 +421,7 @@
       "description": "Core English language benchmarks",
       "benchmarks": ["arc_easy", "arc_challenge", "hellaswag", "mmlu"],
       "priority": "high",
-      "required": true
+      "required": false
     },
     
     "reasoning": {
@@ -463,11 +463,11 @@
   },
   
   "notification_config": {
-    "enabled": true,
-    "notify_on_start": true,
-    "notify_on_completion": true,
-    "notify_on_failure": true,
-    "include_summary": true,
+    "enabled": false,
+    "notify_on_start": false,
+    "notify_on_completion": false,
+    "notify_on_failure": false,
+    "include_summary": false,
     "include_detailed_results": false
   }
 }

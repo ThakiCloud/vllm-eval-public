@@ -571,7 +571,7 @@ standardize_results() {
     mkdir -p "$parsed_dir"
     log INFO "Standardized results will be saved in: $parsed_dir"
 
-    local result_files=("$results_dir"/*_results*.json)
+    local result_files=($(find "$results_dir" -type f -name '*results*.json'))
     if [[ ${#result_files[@]} -eq 0 || ! -e "${result_files[0]}" ]]; then
         log WARN "No result files found to standardize in $results_dir"
         return 0
@@ -753,16 +753,18 @@ main() {
     # Environment setup
     prepare_environment
     
-    standardize_results "$RESULTS_DIR"
-
     # Run evaluation
     local evaluation_start_time=$(date +%s)
     
     if ! run_evalchemy_evaluation "$tasks" "$VLLM_MODEL_ENDPOINT"; then
+        standardize_results "$RESULTS_DIR"
+        
         log ERROR "Evaluation failed"
         exit 1
     fi
     
+    standardize_results "$RESULTS_DIR"
+
     local evaluation_end_time=$(date +%s)
     local total_duration=$((evaluation_end_time - evaluation_start_time))
     
