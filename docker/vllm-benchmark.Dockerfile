@@ -44,7 +44,7 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/benchmarks /app/benchmarks
 
-COPY configs/vllm_benchmark.yaml /app/configs/vllm_benchmark.yaml
+COPY configs/vllm_benchmark.json /app/configs/eval_config.json
 COPY eval/vllm-benchmark/ /app/scripts/
 COPY scripts/standardize_vllm_benchmark.py /app/scripts/standardize_vllm_benchmark.py
 
@@ -76,9 +76,10 @@ ENV VLLM_ENDPOINT="http://localhost:8000" \
     RANDOM_OUTPUT_LEN="128" \
     BACKEND="vllm" \
     DATASET_TYPE="random" \
-    PERCENTILE_METRICS="ttft,tpot,itl,e2el" \
-    METRIC_PERCENTILES="25,50,75,90,95,99" \
-    LOG_LEVEL="INFO"
+#    PERCENTILE_METRICS="ttft,tpot,itl,e2el" \
+#    METRIC_PERCENTILES="25,50,75,90,95,99" \
+    LOG_LEVEL="INFO" \
+    BACKEND_API="http://model-benchmark-backend-svc:8000"
 
 VOLUME ["/app/results", "/app/parsed"]
 

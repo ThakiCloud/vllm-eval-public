@@ -26,7 +26,8 @@ def send_to_endpoint(url: str, data: str, data_description: str, run_id: str, be
         # 최종 전송할 JSON payload 구성
         payload = {
             "run_id": run_id,
-            "benchmark_name": benchmark_name,
+            "benchmark_name": "Nvidia Eval",
+            "tasks": benchmark_name,
             "data": json.loads(data),  # 문자열로 전달된 JSON을 실제 객체로 변환
             "timestamp": timestamp,
             "model_id": model_id,
@@ -97,7 +98,8 @@ def standardize_aime_format(input_data, benchmark_name, model_id, file_path, run
         "meta": {
             "run_id": final_run_id,
             "timestamp": final_timestamp,
-            "benchmark_name": benchmark_name,
+            "benchmark_name": "Nvidia Eval",
+            "tasks": benchmark_name,
             "model": {
                 "id": model_info.get("id") or model_id,
                 "tokenizer_id": model_info.get("tokenizer_id") or model_info.get("id") or model_id,

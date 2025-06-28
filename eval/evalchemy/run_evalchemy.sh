@@ -43,7 +43,15 @@ NC='\033[0m' # No Color
 #
 
 # Default values
-DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/evalchemy.json"
+# 기본 설정 (Docker 환경 자동 감지)
+if [ -f /.dockerenv ]; then
+    # Docker 컨테이너 내부에서 실행 중
+    DEFAULT_CONFIG_PATH="/app/configs/eval_config.json"
+else
+    # 호스트에서 직접 실행 중
+    DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/evalchemy.json"
+fi
+
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/results"
 DEFAULT_GPU_DEVICE="0"
 DEFAULT_BATCH_SIZE="8"
@@ -51,6 +59,9 @@ DEFAULT_MAX_LENGTH="2048"
 DEFAULT_TEMPERATURE="0.0"
 DEFAULT_TOP_P="1.0"
 DEFAULT_LOG_LEVEL="INFO"
+DEFAULT_MODEL_NAME="qwen3-8b"
+DEFAULT_TOKENIZER="Qwen/Qwen3-8B"
+DEFAULT_TOKENIZER_BACKEND="huggingface"
 
 # Environment variables with defaults
 VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
@@ -63,6 +74,9 @@ MAX_LENGTH="${MAX_LENGTH:-$DEFAULT_MAX_LENGTH}"
 TEMPERATURE="${TEMPERATURE:-$DEFAULT_TEMPERATURE}"
 TOP_P="${TOP_P:-$DEFAULT_TOP_P}"
 LOG_LEVEL="${LOG_LEVEL:-$DEFAULT_LOG_LEVEL}"
+MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL_NAME}"
+TOKENIZER="${TOKENIZER:-$DEFAULT_TOKENIZER}"
+TOKENIZER_BACKEND="${TOKENIZER_BACKEND:-$DEFAULT_TOKENIZER_BACKEND}"
 
 # Derived paths
 RESULTS_DIR="${OUTPUT_DIR}/${RUN_ID}"
@@ -122,6 +136,9 @@ OPTIONS:
     -l, --max-length N      Maximum sequence length (default: 2048)
     -t, --temperature F     Sampling temperature (default: 0.0)
     -p, --top-p F           Top-p sampling parameter (default: 1.0)
+    --model-name NAME       Model name (default: qwen3-8b)
+    --tokenizer PATH        Tokenizer path (default: Qwen/Qwen3-8B)
+    --tokenizer-backend TYPE Tokenizer backend (default: huggingface)
     --log-level LEVEL       Logging level (DEBUG|INFO|WARN|ERROR)
     --dry-run               Show commands without executing
     --list-benchmarks       List available benchmarks and exit
@@ -139,6 +156,9 @@ ENVIRONMENT VARIABLES:
     MAX_LENGTH              Maximum sequence length
     TEMPERATURE             Sampling temperature
     TOP_P                   Top-p sampling parameter
+    MODEL_NAME              Model name
+    TOKENIZER               Tokenizer path
+    TOKENIZER_BACKEND       Tokenizer backend type
     LOG_LEVEL               Logging verbosity level
 
 EXAMPLES:
@@ -152,12 +172,14 @@ EXAMPLES:
         --output /data/results \\
         --run-id evaluation_20240101
 
-    # High-performance settings
+    # High-performance settings with custom model
     $SCRIPT_NAME \\
         --endpoint http://localhost:8000/v1 \\
         --batch-size 16 \\
         --gpu 0,1,2,3 \\
-        --max-length 4096
+        --max-length 4096 \\
+        --model-name llama3-8b \\
+        --tokenizer meta-llama/Llama-3-8B
 
     # Validation and dry-run
     $SCRIPT_NAME --validate-config --config custom.json
@@ -479,11 +501,11 @@ run_benchmark() {
     # Build command arguments
     local cmd_args=(
         "--model" "openai-completions"
-        "--model_args" "base_url=$endpoint,model=qwen3-8b,max_tokens=$MAX_LENGTH,tokenizer=Qwen/Qwen3-8B,tokenizer_backend=huggingface"
+        "--model_args" "base_url=$endpoint,model=$MODEL_NAME,max_tokens=$MAX_LENGTH,tokenizer=$TOKENIZER,tokenizer_backend=$TOKENIZER_BACKEND"
         "--tasks" "$tasks"
         "--num_fewshot" "$num_fewshot"
         "--batch_size" "1"
-        "--output_path" "$RESULTS_DIR/${benchmark_name}_results.json"
+        "--output_path" "$RESULTS_DIR/${benchmark_name}"
         "--log_samples"
         "--show_config"
         "--include_path" "$SCRIPT_DIR/tasks"
@@ -549,9 +571,9 @@ aggregate_results() {
     local successful_benchmarks=0
     
     # Process each result file
-    for result_file in "$RESULTS_DIR"/*_results.json; do
+    for result_file in "$RESULTS_DIR"/*results*.json; do
         if [[ -f "$result_file" ]]; then
-            local benchmark_name=$(basename "$result_file" "_results.json")
+            local benchmark_name=$(basename "$result_file" "*results*.json")
             total_benchmarks=$((total_benchmarks + 1))
             
             # Extract key metrics
@@ -594,6 +616,8 @@ aggregate_results() {
 
 standardize_results() {
     local results_dir="$1"
+    local benchmark_name="$2"
+    local benchmark_array="$3"
     local parsed_dir="${SCRIPT_DIR}/parsed"
     local standardize_script_path="${SCRIPT_DIR}/../../scripts/standardize_evalchemy.py"
 
@@ -622,7 +646,7 @@ standardize_results() {
         if [[ -d "$item" ]]; then
             # Handle directory output (from --log_samples)
             # Find the result file, which may have a timestamp (e.g., results_20240101.json).
-            result_file_path=$(find "$item" -name 'results*.json' -print -quit)
+            result_file_path=$(find "$item" -name '*results*.json' -print -quit)
 
             if [[ -n "$result_file_path" && -f "$result_file_path" ]]; then
                 input_to_standardize="$result_file_path"
@@ -630,7 +654,7 @@ standardize_results() {
                 dirname=$(basename "$item")
                 base_stem="${dirname%_results.json}"
             else
-                log WARN "No result file matching 'results*.json' found in directory: $item"
+                log WARN "No result file matching '*results*.json' found in directory: $item"
                 continue
             fi
         elif [[ -f "$item" ]]; then
@@ -646,7 +670,7 @@ standardize_results() {
             
             log INFO "Standardizing $input_to_standardize -> $output_file"
 
-            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID"; then
+            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID" --benchmark_name "$benchmark_name" --tasks "$benchmark_array"; then
                 log INFO "Successfully standardized $base_stem"
             else
                 log ERROR "Failed to standardize $base_stem"
@@ -718,6 +742,18 @@ main() {
                 ;;
             -p|--top-p)
                 TOP_P="$2"
+                shift 2
+                ;;
+            --model-name)
+                MODEL_NAME="$2"
+                shift 2
+                ;;
+            --tokenizer)
+                TOKENIZER="$2"
+                shift 2
+                ;;
+            --tokenizer-backend)
+                TOKENIZER_BACKEND="$2"
                 shift 2
                 ;;
             --log-level)
@@ -847,7 +883,7 @@ main() {
     log INFO "Summary file: $SUMMARY_FILE"
     
     # Standardize results
-    standardize_results "$RESULTS_DIR"
+    standardize_results "$RESULTS_DIR" "Evalchemy" "${benchmark_array}"
 
     # Exit with appropriate code
     if [[ ${#failed_benchmarks[@]} -eq 0 ]]; then

@@ -1,0 +1,40 @@
+{
+  "name": "VLLM Performance Benchmark",
+  "version": "2.0.0",
+  "description": "VLLM 서빙 성능 측정 벤치마크",
+  "defaults": {
+    "endpoint": "http://host.docker.internal:8000",
+    "backend": "openai-chat",
+    "endpoint_path": "/v1/chat/completions",
+    "dataset_type": "random",
+    "percentile_metrics": "ttft,tpot,itl,e2el",
+    "metric_percentiles": "25,50,75,90,95,99"
+  },
+  "scenarios": [
+    {
+      "name": "basic_performance",
+      "description": "기본 성능 측정",
+      "model": "Qwen/Qwen3-8B",
+      "served_model_name": "qwen3-8b",
+      "max_concurrency": 1,
+      "random_input_len": 1024,
+      "random_output_len": 1024
+    },
+    {
+      "name": "concurrency_test",
+      "description": "동시 요청 처리 성능",
+      "model": "Qwen/Qwen3-8B",
+      "served_model_name": "qwen3-8b",
+      "max_concurrency": 1,
+      "random_input_len": 1024,
+      "random_output_len": 1024,
+      "num_prompts": 1
+    }
+  ],
+  "thresholds": {
+    "ttft_p95_ms": 200,
+    "tpot_mean_ms": 50,
+    "throughput_min": 10,
+    "success_rate": 0.95
+  }
+} 

@@ -94,7 +94,7 @@ RUN pip install --no-cache-dir bespokelabs-curator
 # 평가 설정 파일들을 올바른 위치에 복사
 RUN mkdir -p /app/evalchemy-src/results
 COPY eval/standard_evalchemy/ /app/eval/standard_evalchemy/
-COPY configs/standard_evalchemy.json /app/configs/standard_evalchemy.json
+COPY configs/standard_evalchemy.json /app/configs/eval_config.json
 COPY scripts/standardize_evalchemy.py /app/scripts/standardize_evalchemy.py
 
 # 디렉토리 권한 설정
@@ -104,12 +104,15 @@ RUN chown -R evaluser:evaluser /app /home/evaluser
 USER evaluser
 
 # 기본 환경 변수 설정
-ENV EVAL_CONFIG_PATH="/app/configs/standard_evalchemy.json" \
+ENV EVAL_CONFIG_PATH="/app/configs/eval_config.json" \
     VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
     OUTPUT_DIR="/app/evalchemy-src/results" \
     MAX_TOKENS="14000" \
     LIMIT="1" \
     LOG_LEVEL="INFO" \
+    MODEL_NAME="qwen3-8b" \
+    TOKENIZER="Qwen/Qwen3-8B" \
+    TOKENIZER_BACKEND="huggingface" \
     PYTHONPATH="/app/evalchemy-src:/app" \
     BACKEND_API="http://model-benchmark-backend-svc:8000"
 
@@ -141,6 +144,15 @@ ENTRYPOINT ["/app/eval/standard_evalchemy/run_evalchemy.sh"]
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
 #   -e VLLM_MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
 #   -e LOG_LEVEL="DEBUG" \
+#   vllm-eval/evalchemy:latest
+#
+# 7. 커스텀 모델로 실행:
+# docker run --rm \
+#   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
+#   -e VLLM_MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
+#   -e MODEL_NAME="llama3-8b" \
+#   -e TOKENIZER="meta-llama/Llama-3-8B" \
+#   -e TOKENIZER_BACKEND="huggingface" \
 #   vllm-eval/evalchemy:latest
 #
 # 3. 네트워크 모드로 실행 (VLLM 서버와 직접 연결):

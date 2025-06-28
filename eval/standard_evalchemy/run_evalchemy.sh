@@ -43,13 +43,24 @@ NC='\033[0m' # No Color
 #
 
 # Default values
-DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/standard_evalchemy.json"
+# 기본 설정 (Docker 환경 자동 감지)
+if [ -f /.dockerenv ]; then
+    # Docker 컨테이너 내부에서 실행 중
+    DEFAULT_CONFIG_PATH="/app/configs/eval_config.json"
+else
+    # 호스트에서 직접 실행 중
+    DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/standard_evalchemy.json"
+fi
+
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/logs"
 DEFAULT_BATCH_SIZE="1"
 DEFAULT_MAX_TOKENS="14000"
 DEFAULT_NUM_FEWSHOT="1"
 DEFAULT_LIMIT="1"
 DEFAULT_LOG_LEVEL="INFO"
+DEFAULT_MODEL_NAME="qwen3-8b"
+DEFAULT_TOKENIZER="Qwen/Qwen3-8B"
+DEFAULT_TOKENIZER_BACKEND="huggingface"
 
 # Environment variables with defaults
 VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
@@ -61,6 +72,9 @@ MAX_TOKENS="${MAX_TOKENS:-$DEFAULT_MAX_TOKENS}"
 NUM_FEWSHOT="${NUM_FEWSHOT:-}"
 LIMIT="${LIMIT:-$DEFAULT_LIMIT}"
 LOG_LEVEL="${LOG_LEVEL:-$DEFAULT_LOG_LEVEL}"
+MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL_NAME}"
+TOKENIZER="${TOKENIZER:-$DEFAULT_TOKENIZER}"
+TOKENIZER_BACKEND="${TOKENIZER_BACKEND:-$DEFAULT_TOKENIZER_BACKEND}"
 
 # Derived paths
 RESULTS_DIR="${OUTPUT_DIR}/${RUN_ID}"
@@ -208,6 +222,9 @@ OPTIONS:
     --max-tokens N          Maximum tokens
     --num-fewshot N         Number of few-shot examples
     --limit N               Limit number of examples
+    --model-name NAME       Model name (default: qwen3-8b)
+    --tokenizer PATH        Tokenizer path (default: Qwen/Qwen3-8B)
+    --tokenizer-backend TYPE Tokenizer backend (default: huggingface)
     --log-level LEVEL       Logging level (DEBUG|INFO|WARN|ERROR)
     --dry-run               Show commands without executing
     --debug                 Enable debug mode
@@ -224,16 +241,21 @@ ENVIRONMENT VARIABLES:
     MAX_TOKENS              Maximum tokens
     NUM_FEWSHOT             Few-shot examples count
     LIMIT                   Example limit
+    MODEL_NAME              Model name
+    TOKENIZER               Tokenizer path
+    TOKENIZER_BACKEND       Tokenizer backend type
     LOG_LEVEL               Logging verbosity level
 
 EXAMPLES:
     # Run all enabled tasks from config
     $SCRIPT_NAME --endpoint http://localhost:8000/v1
 
-    # Override specific tasks
+    # Override specific tasks and model
     $SCRIPT_NAME \\
         --endpoint http://localhost:8000/v1 \\
         --tasks AIME24,bbh \\
+        --model-name llama3-8b \\
+        --tokenizer meta-llama/Llama-3-8B \\
         --debug
 
     # List available tasks
@@ -241,6 +263,7 @@ EXAMPLES:
 
     # Using environment variables
     export VLLM_MODEL_ENDPOINT="http://localhost:8000/v1"
+    export MODEL_NAME="claude-3-sonnet"
     $SCRIPT_NAME
 
 EOF
@@ -402,9 +425,9 @@ run_single_task_evaluation() {
     log INFO "Running evalchemy evaluation for task: $task"
     
     # Read model configuration from config file - use simple defaults for now
-    local model_name="qwen3-8b"
-    local tokenizer="Qwen/Qwen3-8B"
-    local tokenizer_backend="huggingface"
+    local model_name="$MODEL_NAME"
+    local tokenizer="$TOKENIZER"
+    local tokenizer_backend="$TOKENIZER_BACKEND"
     local temperature="0.0"
     local top_p="1.0"
     
@@ -558,6 +581,8 @@ run_evalchemy_evaluation() {
 
 standardize_results() {
     local results_dir="$1"
+    local benchmark_name="$2"
+    local tasks="$3"
     local parsed_dir="${SCRIPT_DIR}/parsed"
     local standardize_script_path="${SCRIPT_DIR}/../../scripts/standardize_evalchemy.py"
 
@@ -586,7 +611,7 @@ standardize_results() {
         if [[ -d "$item" ]]; then
             # Handle directory output (from --log_samples)
             # Find the result file, which may have a timestamp (e.g., results_20240101.json).
-            result_file_path=$(find "$item" -name 'results*.json' -print -quit)
+            result_file_path=$(find "$item" -name '*results*.json' -print -quit)
 
             if [[ -n "$result_file_path" && -f "$result_file_path" ]]; then
                 input_to_standardize="$result_file_path"
@@ -594,7 +619,7 @@ standardize_results() {
                 dirname=$(basename "$item")
                 base_stem="${dirname%_results.json}"
             else
-                log WARN "No result file matching 'results*.json' found in directory: $item"
+                log WARN "No result file matching '*results*.json' found in directory: $item"
                 continue
             fi
         elif [[ -f "$item" ]]; then
@@ -610,7 +635,7 @@ standardize_results() {
             
             log INFO "Standardizing $input_to_standardize -> $output_file"
 
-            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID"; then
+            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID" --benchmark_name "$benchmark_name" --tasks "$tasks"; then
                 log INFO "Successfully standardized $base_stem"
             else
                 log ERROR "Failed to standardize $base_stem"
@@ -673,6 +698,18 @@ main() {
                 ;;
             --limit)
                 LIMIT="$2"
+                shift 2
+                ;;
+            --model-name)
+                MODEL_NAME="$2"
+                shift 2
+                ;;
+            --tokenizer)
+                TOKENIZER="$2"
+                shift 2
+                ;;
+            --tokenizer-backend)
+                TOKENIZER_BACKEND="$2"
                 shift 2
                 ;;
             --log-level)
@@ -757,13 +794,13 @@ main() {
     local evaluation_start_time=$(date +%s)
     
     if ! run_evalchemy_evaluation "$tasks" "$VLLM_MODEL_ENDPOINT"; then
-        standardize_results "$RESULTS_DIR"
+        standardize_results "$RESULTS_DIR" "Standard Evalchemy" "${tasks}"
         
         log ERROR "Evaluation failed"
         exit 1
     fi
     
-    standardize_results "$RESULTS_DIR"
+    standardize_results "$RESULTS_DIR" "Standard Evalchemy" "${tasks}"
 
     local evaluation_end_time=$(date +%s)
     local total_duration=$((evaluation_end_time - evaluation_start_time))

@@ -1,62 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
-# YAML 파싱을 위한 Python 헬퍼 스크립트 생성
-cat > /tmp/parse_yaml.py << 'EOF'
-#!/usr/bin/env python3
-import yaml
-import sys
-import json
-import os
-
-def parse_vllm_config(config_path):
-    """VLLM 벤치마크 설정 파일 파싱"""
-    if not os.path.exists(config_path):
-        print(f"❌ 설정 파일을 찾을 수 없습니다: {config_path}", file=sys.stderr)
-        sys.exit(1)
-    
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-        
-        benchmark_config = config.get('vllm_benchmark', {})
-        defaults = benchmark_config.get('defaults', {})
-        scenarios = benchmark_config.get('scenarios', [])
-        
-        # 활성화된 시나리오만 필터링 (주석 처리되지 않은 것들)
-        active_scenarios = []
-        for scenario in scenarios:
-            if isinstance(scenario, dict) and 'name' in scenario:
-                active_scenarios.append(scenario)
-        
-        result = {
-            'defaults': defaults,
-            'scenarios': active_scenarios
-        }
-        
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-        
-    except Exception as e:
-        print(f"❌ 설정 파일 파싱 오류: {e}", file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("사용법: python3 parse_yaml.py <config_path>", file=sys.stderr)
-        sys.exit(1)
-    
-    parse_vllm_config(sys.argv[1])
-EOF
-
 # 기본 설정 (Docker 환경 자동 감지)
 if [ -f /.dockerenv ]; then
     # Docker 컨테이너 내부에서 실행 중
     DEFAULT_ENDPOINT="http://host.docker.internal:8000"
-    CONFIG_PATH="/app/configs/vllm_benchmark.yaml"
+    CONFIG_PATH="/app/configs/eval_config.json"
 else
     # 호스트에서 직접 실행 중
     DEFAULT_ENDPOINT="http://localhost:8000"
-    CONFIG_PATH="${CONFIG_PATH:-configs/vllm_benchmark.yaml}"
+    CONFIG_PATH="${CONFIG_PATH:-configs/vllm_benchmark.json}"
 fi
 
 # 환경 변수 기본값 설정
@@ -80,13 +33,7 @@ echo "📁 설정 파일: $CONFIG_PATH" | tee -a "$MAIN_LOG_FILE"
 echo "💾 결과 디렉토리: $OUTPUT_DIR" | tee -a "$MAIN_LOG_FILE"
 echo "===============================================" | tee -a "$MAIN_LOG_FILE"
 
-# YAML 설정 파싱
-echo "📋 설정 파일 파싱 중..." | tee -a "$MAIN_LOG_FILE"
-CONFIG_JSON=$(python3 /tmp/parse_yaml.py "$CONFIG_PATH")
-if [ $? -ne 0 ]; then
-    echo "❌ 설정 파일 파싱 실패" | tee -a "$MAIN_LOG_FILE"
-    exit 1
-fi
+CONFIG_JSON=$(cat $CONFIG_PATH)
 
 # 시나리오 개수 확인
 SCENARIO_COUNT=$(echo "$CONFIG_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data['scenarios']))")
@@ -187,7 +134,7 @@ print(json.dumps(merged))
             STANDARDIZED_JSON_PATH="$PARSED_DIR/$STANDARDIZED_FILENAME"
 
             echo "🔄 결과 표준화 중 -> $STANDARDIZED_JSON_PATH" | tee -a "$MAIN_LOG_FILE"
-            python3 /app/scripts/standardize_vllm_benchmark.py "$RESULT_JSON" --output_file "$STANDARDIZED_JSON_PATH" | tee -a "$MAIN_LOG_FILE"
+            python3 /app/scripts/standardize_vllm_benchmark.py "$RESULT_JSON" --output_file "$STANDARDIZED_JSON_PATH" --task_name "$SCENARIO_NAME" --config_path "$CONFIG_PATH" | tee -a "$MAIN_LOG_FILE"
         else
             echo "⚠️  시나리오 '$SCENARIO_NAME' 결과 JSON 파일을 찾을 수 없습니다: $SCENARIO_RESULT_DIR" | tee -a "$MAIN_LOG_FILE"
         fi
