@@ -56,7 +56,7 @@ def parse_model_args(model_args_str: str) -> dict:
             args_dict[key.strip()] = value.strip()
     return args_dict
 
-def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str = None):
+def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str = None, benchmark_name: str = None, tasks: str = None):
     """
     Evalchemy (lm-evaluation-harness) 벤치마크 결과 JSON 파일을 표준 형식으로 변환합니다.
     결과를 파일에 저장하고, 선택적으로 원본 및 변환된 데이터를 원격 URL로 전송합니다.
@@ -70,9 +70,8 @@ def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str 
         sys.exit(1)
 
     # --- Meta 데이터 추출 ---
-    benchmark_keys = list(data.get("results", {}).keys())
-    benchmark_name = benchmark_keys[0] if benchmark_keys else "unknown_benchmark"
-    
+    benchmark_name = benchmark_name
+    task_name = tasks
     model_args = parse_model_args(data.get("config", {}).get("model_args", ""))
     tokenizer_id = model_args.get("tokenizer", data.get("config", {}).get("model_name"))
 
@@ -90,29 +89,23 @@ def standardize_evalchemy_json(input_path: Path, output_path: Path, run_id: str 
         "run_id": run_id or inferred_run_id,
         "timestamp": datetime.fromtimestamp(data["date"]).isoformat() + "Z" if "date" in data else datetime.now().isoformat() + "Z",
         "benchmark_name": benchmark_name,
+        "tasks": task_name,
         "model": {
             "id": data.get("model_name"),
             "tokenizer_id": tokenizer_id,
             "source": data.get("model_source") or data.get("config", {}).get("model")
         },
-        "config": {
-            "num_fewshot": data.get("n-shot", {}).get(benchmark_name),
-            "batch_size": data.get("config", {}).get("batch_size"),
-            "limit": data.get("config", {}).get("limit"),
-            "doc_to_text": data.get("configs", {}).get(benchmark_name, {}).get("doc_to_text"),
-            "generation_kwargs": data.get("config", {}).get("gen_kwargs")
-        }
+        "config": data.get("config", {})
     }
 
     # --- Results 데이터 추출 ---
-    results_data = data.get("results", {}).get(benchmark_name, {})
-    results_data.pop("alias", None) # 'alias' 키는 필요 없으므로 제거
+    results_data = data.get("results", {})
 
     # --- Performance 데이터 추출 ---
     performance = {
         "summary": {
             "duration_sec": float(data["total_evaluation_time_seconds"]) if "total_evaluation_time_seconds" in data else None,
-            "completed_requests": data.get("n-samples", {}).get(benchmark_name, {}).get("effective"),
+            "completed_requests": None,
             "total_input_tokens": None, # Evalchemy 결과에는 토큰 정보가 없음
             "total_output_tokens": None
         },
@@ -151,7 +144,8 @@ if __name__ == "__main__":
     parser.add_argument("input_file", type=str, help="Path to the input JSON file from Evalchemy.")
     parser.add_argument("--output_file", type=str, help="Path to the output standardized JSON file. (Optional)")
     parser.add_argument("--run_id", type=str, help="Explicitly set the Run ID for the benchmark results. (Optional)")
-    
+    parser.add_argument("--benchmark_name", type=str, help="Explicitly set the Benchmark Name for the benchmark results. (Optional)")
+    parser.add_argument("--tasks", type=str, help="Explicitly set the Benchmark Array for the benchmark results. (Optional)")
     args = parser.parse_args()
     
     input_path = Path(args.input_file)
@@ -160,4 +154,4 @@ if __name__ == "__main__":
     else:
         output_path = input_path.parent / f"{input_path.stem}_standardized.json"
 
-    standardize_evalchemy_json(input_path, output_path, run_id=args.run_id) 
+    standardize_evalchemy_json(input_path, output_path, run_id=args.run_id, benchmark_name=args.benchmark_name, tasks=args.tasks) 

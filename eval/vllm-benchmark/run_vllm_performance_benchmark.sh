@@ -4,7 +4,7 @@ set -euo pipefail
 # 성능 벤치마크 실행 스크립트
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-CONFIG_FILE="${PROJECT_ROOT}/configs/vllm_benchmark.yaml"
+CONFIG_FILE="${PROJECT_ROOT}/configs/vllm_benchmark.json"
 
 # 기본 설정
 VLLM_ENDPOINT="${VLLM_ENDPOINT:-http://localhost:8000}"

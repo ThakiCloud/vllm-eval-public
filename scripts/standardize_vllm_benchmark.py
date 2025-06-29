@@ -43,7 +43,48 @@ def send_to_endpoint(url: str, data: str, data_description: str, run_id: str, be
     except json.JSONDecodeError as je:
         print(f"❌ Invalid JSON format in 'data' argument. Error: {je}", file=sys.stderr)
 
-def standardize_vllm_json(input_path: Path, output_path: Path):
+def load_config_metrics(config_path: str = None) -> list:
+    """
+    설정 파일에서 latency metrics를 로드합니다.
+    """
+    default_metrics = ["ttft", "tpot", "itl", "e2el"]
+    
+    if not config_path:
+        # 기본 설정 파일 경로들 시도
+        possible_paths = [
+            "configs/vllm_benchmark.json",
+            "../configs/vllm_benchmark.json", 
+            "../../configs/vllm_benchmark.json"
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                config_path = path
+                break
+    
+    if not config_path or not os.path.exists(config_path):
+        print(f"⚠️ Warning: Config file not found, using default metrics: {default_metrics}")
+        return default_metrics
+    
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        
+        # percentile_metrics에서 메트릭 추출
+        percentile_metrics = config.get("defaults", {}).get("percentile_metrics", "")
+        if percentile_metrics:
+            metrics = [metric.strip() for metric in percentile_metrics.split(",")]
+            print(f"✅ Loaded metrics from config: {metrics}")
+            return metrics
+        else:
+            print(f"⚠️ Warning: percentile_metrics not found in config, using default: {default_metrics}")
+            return default_metrics
+            
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"⚠️ Warning: Error reading config file {config_path}: {e}, using default metrics: {default_metrics}")
+        return default_metrics
+
+def standardize_vllm_json(input_path: Path, output_path: Path, task_name: str = None, config_path: str = None):
     """
     vLLM 벤치마크 결과 JSON 파일을 표준 형식으로 변환합니다.
     """
@@ -67,7 +108,8 @@ def standardize_vllm_json(input_path: Path, output_path: Path):
     meta = {
         "run_id": str(data.get("date")),
         "timestamp": timestamp,
-        "benchmark_name": "vllm_performance_test",
+        "benchmark_name": "vllm_benchmark",
+        "tasks": task_name,
         "model": {
             "id": data.get("model_id"),
             "tokenizer_id": data.get("tokenizer_id"),
@@ -86,7 +128,7 @@ def standardize_vllm_json(input_path: Path, output_path: Path):
 
     # --- Performance 데이터 추출 ---
     latency_data = {}
-    latency_metrics = ["ttft", "tpot", "itl", "e2el"]
+    latency_metrics = load_config_metrics(config_path)
     for metric in latency_metrics:
         # mean, median, std, p25-p99 등 모든 통계 정보 추출
         stats = {}
@@ -137,7 +179,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Standardize vLLM benchmark JSON results.")
     parser.add_argument("input_file", type=str, help="Path to the input JSON file from vLLM benchmark.")
     parser.add_argument("--output_file", type=str, help="Path to the output standardized JSON file. (Optional)")
-    
+    parser.add_argument("--task_name", type=str, help="Task name for the benchmark results. (Optional)")
+    parser.add_argument("--config_path", type=str, help="Path to the vLLM benchmark config JSON file. (Optional)")
     args = parser.parse_args()
     
     input_path = Path(args.input_file)
@@ -146,4 +189,4 @@ if __name__ == "__main__":
     else:
         output_path = input_path.parent / f"{input_path.stem}.json"
         
-    standardize_vllm_json(input_path, output_path) 
+    standardize_vllm_json(input_path, output_path, task_name=args.task_name, config_path=args.config_path) 
