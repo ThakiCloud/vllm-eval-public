@@ -21,6 +21,10 @@ elif [ "$MODEL_NAME" == "qwen3-8b" ]; then
     seed_list_aime24=(100)
     seed_list_aime25=(200)
     MODEL_TYPE="qwen"
+else
+    seed_list_aime24=(100)
+    seed_list_aime25=(200)
+    MODEL_TYPE="qwen"
 fi
 
 
