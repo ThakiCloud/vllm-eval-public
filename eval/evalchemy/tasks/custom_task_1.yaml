@@ -14,7 +14,6 @@ dataset_kwargs:
 output_type: generate_until
 generation_kwargs:
   until: ["\n"]
-  max_gen_toks: 100
 filter_list:
   - name: "whitespace_cleanup"
     filter:
