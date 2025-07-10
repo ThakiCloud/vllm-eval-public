@@ -49,7 +49,7 @@ RUN pip install --no-cache-dir \
     numpy \
     pandas \
     sympy \
-    antlr4-python3-runtime
+    antlr4-python3-runtime==4.11.1
 
 # ANTLR JAR 설치 (LaTeX2SymPy 용)
 RUN wget https://www.antlr.org/download/antlr-4.11.1-complete.jar -O /usr/local/lib/antlr-4.11.1-complete.jar

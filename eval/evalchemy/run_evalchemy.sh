@@ -43,15 +43,7 @@ NC='\033[0m' # No Color
 #
 
 # Default values
-# 기본 설정 (Docker 환경 자동 감지)
-if [ -f /.dockerenv ]; then
-    # Docker 컨테이너 내부에서 실행 중
-    DEFAULT_CONFIG_PATH="/app/configs/eval_config.json"
-else
-    # 호스트에서 직접 실행 중
-    DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/evalchemy.json"
-fi
-
+DEFAULT_CONFIG_PATH="${SCRIPT_DIR}/../../configs/evalchemy.json"
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/results"
 DEFAULT_GPU_DEVICE="0"
 DEFAULT_BATCH_SIZE="8"

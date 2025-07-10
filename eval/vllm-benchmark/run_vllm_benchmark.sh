@@ -1,21 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# 기본 설정 (Docker 환경 자동 감지)
-if [ -f /.dockerenv ]; then
-    # Docker 컨테이너 내부에서 실행 중
-    DEFAULT_ENDPOINT="http://host.docker.internal:8000"
-    CONFIG_PATH="/app/configs/eval_config.json"
-else
-    # 호스트에서 직접 실행 중
-    DEFAULT_ENDPOINT="http://localhost:8000"
-    CONFIG_PATH="${CONFIG_PATH:-configs/vllm_benchmark.json}"
-fi
-
 # 환경 변수 기본값 설정
+DEFAULT_ENDPOINT="http://localhost:8000"
+CONFIG_PATH="${CONFIG_PATH:-configs/vllm_benchmark.json}"
 VLLM_ENDPOINT="${VLLM_ENDPOINT:-$DEFAULT_ENDPOINT}"
-OUTPUT_DIR="${OUTPUT_DIR:-/results}"
-PARSED_DIR="$(dirname "$OUTPUT_DIR")/parsed"
+OUTPUT_DIR="${OUTPUT_DIR:-/app/results}"
+PARSED_DIR="$(dirname "$OUTPUT_DIR")/app/parsed"
 REQUEST_RATE="${REQUEST_RATE:-1.0}"
 
 # 출력 디렉토리 생성
