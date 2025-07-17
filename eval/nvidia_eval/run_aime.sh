@@ -5,6 +5,30 @@ OUTPUT_FOLDER_NAME=$2
 GPUS=$3
 OUT_SEQ_LEN=$4
 
+check_model_endpoint() {
+    local base_url=${API_BASE}
+    local endpoint=$(echo "$base_url" | sed -E 's|/v1/.*$||')/v1/models
+
+    # JSON 응답 받아오기
+    response=$(curl -s "$endpoint")
+
+    # jq로 id 추출
+    model_id=$(echo "$response" | jq -r '.data[0].id')
+
+    if [[ -n "$model_id" && "$model_id" != "null" ]]; then
+        log INFO "Model endpoint is valid: $model_id"
+        echo "$model_id"
+    else
+        log ERROR "Model endpoint is not valid or model ID missing"
+        return 1
+    fi
+    if [[ -z "$MODEL_NAME" ]]; then
+        MODEL_NAME="$model_id"
+    fi
+}
+
+check_model_endpoint || exit 1
+
 if [ "$MODEL_NAME" == "nvidia/AceReason-Nemotron-7B" ]; then
     seed_list_aime24=(121 131 141 151 161 171 181 191)
     seed_list_aime25=(111 222 333 444 555 666 777 888)

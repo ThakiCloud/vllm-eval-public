@@ -50,9 +50,7 @@ DEFAULT_MAX_TOKENS="14000"
 DEFAULT_NUM_FEWSHOT="1"
 DEFAULT_LIMIT="1"
 DEFAULT_LOG_LEVEL="INFO"
-DEFAULT_MODEL_NAME="qwen3-8b"
-DEFAULT_TOKENIZER="Qwen/Qwen3-8B"
-DEFAULT_TOKENIZER_BACKEND="huggingface"
+DEFAULT_TOKENIZER_BACKEND="none"
 
 # Environment variables with defaults
 VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
@@ -64,8 +62,8 @@ MAX_TOKENS="${MAX_TOKENS:-$DEFAULT_MAX_TOKENS}"
 NUM_FEWSHOT="${NUM_FEWSHOT:-}"
 LIMIT="${LIMIT:-$DEFAULT_LIMIT}"
 LOG_LEVEL="${LOG_LEVEL:-$DEFAULT_LOG_LEVEL}"
-MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL_NAME}"
-TOKENIZER="${TOKENIZER:-$DEFAULT_TOKENIZER}"
+MODEL_NAME="${MODEL_NAME:-}"
+TOKENIZER="${TOKENIZER:-$MODEL_NAME}"
 TOKENIZER_BACKEND="${TOKENIZER_BACKEND:-$DEFAULT_TOKENIZER_BACKEND}"
 
 # Derived paths
@@ -638,6 +636,32 @@ standardize_results() {
     log INFO "Standardization process complete. Parsed files are in: $parsed_dir"
 }
 
+check_model_endpoint() {
+    local base_url="$1"
+    local endpoint=$(echo "$base_url" | sed -E 's|/v1/.*$||')/v1/models
+
+    # JSON 응답 받아오기
+    response=$(curl -s "$endpoint")
+
+    # jq로 id 추출
+    model_id=$(echo "$response" | jq -r '.data[0].id')
+
+    if [[ -n "$model_id" && "$model_id" != "null" ]]; then
+        log INFO "Model endpoint is valid: $model_id"
+        echo "$model_id"
+    else
+        log ERROR "Model endpoint is not valid or model ID missing"
+        return 1
+    fi
+    if [[ -z "$MODEL_NAME" ]]; then
+        MODEL_NAME="$model_id"
+    fi
+    if [[ -z "$TOKENIZER" ]]; then
+        TOKENIZER="$MODEL_NAME"
+    fi
+}
+
+
 main() {
     # Set up signal handlers
     trap cleanup EXIT INT TERM
@@ -778,7 +802,9 @@ main() {
     else
         log INFO "Skipping endpoint test in dry-run mode"
     fi
-    
+
+    check_model_endpoint "$VLLM_MODEL_ENDPOINT" || exit 1
+
     # Environment setup
     prepare_environment
     

@@ -8,6 +8,8 @@ VLLM_ENDPOINT="${VLLM_ENDPOINT:-$DEFAULT_ENDPOINT}"
 OUTPUT_DIR="${OUTPUT_DIR:-/app/results}"
 PARSED_DIR="$(dirname "$OUTPUT_DIR")/app/parsed"
 REQUEST_RATE="${REQUEST_RATE:-1.0}"
+MODEL_NAME="${MODEL_NAME:-}"
+TOKENIZER="${TOKENIZER:-$MODEL_NAME}"
 
 # 출력 디렉토리 생성
 mkdir -p "$OUTPUT_DIR"
@@ -37,6 +39,31 @@ fi
 
 # defaults 설정 추출
 DEFAULTS_JSON=$(echo "$CONFIG_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(json.dumps(data['defaults']))")
+
+check_model_endpoint() {
+    local base_url="$1"
+    local endpoint=$(echo "$base_url" | sed -E 's|/v1/.*$||')/v1/models
+
+    # JSON 응답 받아오기
+    response=$(curl -s "$endpoint")
+
+    # jq로 id 추출
+    model_id=$(echo "$response" | jq -r '.data[0].id')
+
+    if [[ -n "$model_id" && "$model_id" != "null" ]]; then
+        log INFO "Model endpoint is valid: $model_id"
+        echo "$model_id"
+    else
+        log ERROR "Model endpoint is not valid or model ID missing"
+        return 1
+    fi
+    if [[ -z "$MODEL_NAME" ]]; then
+        MODEL_NAME="$model_id"
+    fi
+    if [[ -z "$TOKENIZER" ]]; then
+        TOKENIZER="$MODEL_NAME"
+    fi
+}
 
 # 각 시나리오 실행
 for i in $(seq 0 $((SCENARIO_COUNT - 1))); do
@@ -87,6 +114,7 @@ print(json.dumps(merged))
     echo "🔧 백엔드: $BACKEND" | tee -a "$MAIN_LOG_FILE"
     echo "💾 결과 디렉토리: $SCENARIO_RESULT_DIR" | tee -a "$MAIN_LOG_FILE"
     
+    check_model_endpoint "$VLLM_ENDPOINT" || exit 1
     # 결과 디렉토리 생성
     mkdir -p "$SCENARIO_RESULT_DIR"
     

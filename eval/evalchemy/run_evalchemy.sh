@@ -51,9 +51,7 @@ DEFAULT_MAX_LENGTH="2048"
 DEFAULT_TEMPERATURE="0.0"
 DEFAULT_TOP_P="1.0"
 DEFAULT_LOG_LEVEL="INFO"
-DEFAULT_MODEL_NAME="qwen3-8b"
-DEFAULT_TOKENIZER="Qwen/Qwen3-8B"
-DEFAULT_TOKENIZER_BACKEND="huggingface"
+DEFAULT_TOKENIZER_BACKEND="none"
 
 # Environment variables with defaults
 VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
@@ -66,8 +64,8 @@ MAX_LENGTH="${MAX_LENGTH:-$DEFAULT_MAX_LENGTH}"
 TEMPERATURE="${TEMPERATURE:-$DEFAULT_TEMPERATURE}"
 TOP_P="${TOP_P:-$DEFAULT_TOP_P}"
 LOG_LEVEL="${LOG_LEVEL:-$DEFAULT_LOG_LEVEL}"
-MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL_NAME}"
-TOKENIZER="${TOKENIZER:-$DEFAULT_TOKENIZER}"
+MODEL_NAME="${MODEL_NAME:-}"
+TOKENIZER="${TOKENIZER:-$MODEL_NAME}"
 TOKENIZER_BACKEND="${TOKENIZER_BACKEND:-$DEFAULT_TOKENIZER_BACKEND}"
 
 # Derived paths
@@ -673,6 +671,31 @@ standardize_results() {
     log INFO "Standardization process complete. Parsed files are in: $parsed_dir"
 }
 
+check_model_endpoint() {
+    local base_url="$1"
+    local endpoint=$(echo "$base_url" | sed -E 's|/v1/.*$||')/v1/models
+
+    # JSON 응답 받아오기
+    response=$(curl -s "$endpoint")
+
+    # jq로 id 추출
+    model_id=$(echo "$response" | jq -r '.data[0].id')
+
+    if [[ -n "$model_id" && "$model_id" != "null" ]]; then
+        log INFO "Model endpoint is valid: $model_id"
+        echo "$model_id"
+    else
+        log ERROR "Model endpoint is not valid or model ID missing"
+        return 1
+    fi
+    if [[ -z "$MODEL_NAME" ]]; then
+        MODEL_NAME="$model_id"
+    fi
+    if [[ -z "$TOKENIZER" ]]; then
+        TOKENIZER="$MODEL_NAME"
+    fi
+}
+
 main() {
     # Set up signal handlers
     trap cleanup EXIT INT TERM
@@ -816,6 +839,7 @@ main() {
     validate_config "$EVAL_CONFIG_PATH" || exit 1
     check_gpu_availability || exit 1
     test_model_endpoint "$VLLM_MODEL_ENDPOINT" || exit 1
+    check_model_endpoint "$VLLM_MODEL_ENDPOINT" || exit 1
     check_custom_tasks || log WARN "Custom tasks not available - some benchmarks may fail"
     
     # Environment setup
