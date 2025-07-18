@@ -4,6 +4,9 @@ import json
 import os
 from datasets import load_dataset
 
+os.environ['DATASETS_TRUST_REMOTE_CODE'] = '1'
+os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
+
 def download_livecodebench():
     """Download LiveCodeBench dataset and save as JSONL file"""
 
@@ -15,7 +18,6 @@ def download_livecodebench():
         return output_path
 
     print("Downloading LiveCodeBench dataset...")
-
     try:
         # Load the dataset
         dataset = load_dataset("livecodebench/code_generation_lite", version_tag="release_v6", trust_remote_code=True)

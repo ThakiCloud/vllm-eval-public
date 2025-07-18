@@ -50,9 +50,9 @@ USER evaluser
 ENV EVAL_CONFIG_PATH="/app/configs/evalchemy.json" \
     VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
     LOG_LEVEL="INFO" \
-    MODEL_NAME="qwen3-8b" \
-    TOKENIZER="Qwen/Qwen3-8B" \
-    TOKENIZER_BACKEND="huggingface" \
+#    MODEL_NAME="qwen3-8b" \
+#    TOKENIZER="Qwen/Qwen3-8B" \
+#    TOKENIZER_BACKEND="huggingface" \
     BACKEND_API="http://model-benchmark-backend-svc:8000"
 
 # 작업 디렉토리를 evalchemy로 설정

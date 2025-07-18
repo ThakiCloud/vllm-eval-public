@@ -110,9 +110,9 @@ ENV EVAL_CONFIG_PATH="/app/configs/eval_config.json" \
     MAX_TOKENS="14000" \
     LIMIT="1" \
     LOG_LEVEL="INFO" \
-    MODEL_NAME="qwen3-8b" \
-    TOKENIZER="Qwen/Qwen3-8B" \
-    TOKENIZER_BACKEND="huggingface" \
+#    MODEL_NAME="qwen3-8b" \
+#    TOKENIZER="Qwen/Qwen3-8B" \
+#    TOKENIZER_BACKEND="huggingface" \
     PYTHONPATH="/app/evalchemy-src:/app" \
     BACKEND_API="http://model-benchmark-backend-svc:8000"
 

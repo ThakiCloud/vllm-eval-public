@@ -9,7 +9,8 @@ OUTPUT_DIR="${OUTPUT_DIR:-/app/results}"
 PARSED_DIR="$(dirname "$OUTPUT_DIR")/app/parsed"
 REQUEST_RATE="${REQUEST_RATE:-1.0}"
 MODEL_NAME="${MODEL_NAME:-}"
-TOKENIZER="${TOKENIZER:-$MODEL_NAME}"
+SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-$MODEL_NAME}"
+TOKENIZER="${TOKENIZER:-gpt2}"
 
 # 출력 디렉토리 생성
 mkdir -p "$OUTPUT_DIR"
@@ -42,7 +43,7 @@ DEFAULTS_JSON=$(echo "$CONFIG_JSON" | python3 -c "import sys, json; data=json.lo
 
 check_model_endpoint() {
     local base_url="$1"
-    local endpoint=$(echo "$base_url" | sed -E 's|/v1/.*$||')/v1/models
+    local endpoint="${base_url}/v1/models"
 
     # JSON 응답 받아오기
     response=$(curl -s "$endpoint")
@@ -51,17 +52,17 @@ check_model_endpoint() {
     model_id=$(echo "$response" | jq -r '.data[0].id')
 
     if [[ -n "$model_id" && "$model_id" != "null" ]]; then
-        log INFO "Model endpoint is valid: $model_id"
+        echo "INFO: Model endpoint is valid: $model_id"
         echo "$model_id"
     else
-        log ERROR "Model endpoint is not valid or model ID missing"
+        echo "ERROR: Model endpoint is not valid or model ID missing"
         return 1
     fi
     if [[ -z "$MODEL_NAME" ]]; then
         MODEL_NAME="$model_id"
     fi
-    if [[ -z "$TOKENIZER" ]]; then
-        TOKENIZER="$MODEL_NAME"
+    if [[ -z "$SERVED_MODEL_NAME" ]]; then
+        SERVED_MODEL_NAME="$MODEL_NAME"
     fi
 }
 
@@ -87,8 +88,9 @@ print(json.dumps(merged))
     # 시나리오별 설정 추출
     SCENARIO_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('name', 'unknown'))")
     SCENARIO_DESC=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('description', 'No description'))")
-    MODEL_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('model', 'vllm-model'))")
-    SERVED_MODEL_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('served_model_name', data.get('model', 'vllm-model')))")
+    MODEL_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('model', ''))")
+    SERVED_MODEL_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('served_model_name', data.get('model', '')))")
+    TOKENIZER=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('tokenizer', data.get('model', 'gpt2')))")
     ENDPOINT_PATH=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('endpoint_path', '/v1/chat/completions'))")
     MAX_CONCURRENCY=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('max_concurrency', 1))")
     RANDOM_INPUT_LEN=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('random_input_len', 1024))")
@@ -126,6 +128,7 @@ print(json.dumps(merged))
         --endpoint "$ENDPOINT_PATH" \
         --model "$MODEL_NAME" \
         --served-model-name "$SERVED_MODEL_NAME" \
+        --tokenizer "$TOKENIZER" \
         --dataset-name "$DATASET_TYPE" \
         --random-input-len "$RANDOM_INPUT_LEN" \
         --random-output-len "$RANDOM_OUTPUT_LEN" \

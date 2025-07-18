@@ -36,7 +36,7 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+RUN apt-get update && apt-get install -y --no-install-recommends curl jq && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -65,8 +65,8 @@ USER benchuser
 
 ENV VLLM_ENDPOINT="http://localhost:8000" \
     ENDPOINT_PATH="/v1/chat/completions" \
-    MODEL_NAME="Qwen/Qwen3-8B" \
-    SERVED_MODEL_NAME="qwen3-8b" \
+#    MODEL_NAME="Qwen/Qwen3-8B" \
+#    SERVED_MODEL_NAME="qwen3-8b" \
     OUTPUT_DIR="/app/results" \
     PARSED_DIR="/app/parsed" \
     NUM_PROMPTS="100" \

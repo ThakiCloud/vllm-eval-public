@@ -20,7 +20,7 @@ WORKDIR /workspace
 
 # 필수 시스템 패키지 설치 (네트워크 도구 추가)
 RUN apt-get update && apt-get install -y \
-    curl \
+    curl jq \
     wget \
     git \
     ca-certificates \
@@ -44,7 +44,7 @@ RUN pip install --no-cache-dir \
     requests \
     urllib3 \
     tqdm \
-    datasets \
+    datasets==2.17.0 \
     transformers \
     numpy \
     pandas \

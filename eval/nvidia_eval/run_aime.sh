@@ -7,7 +7,7 @@ OUT_SEQ_LEN=$4
 
 check_model_endpoint() {
     local base_url=${API_BASE}
-    local endpoint=$(echo "$base_url" | sed -E 's|/v1/.*$||')/v1/models
+    local endpoint="${base_url}/models"
 
     # JSON 응답 받아오기
     response=$(curl -s "$endpoint")
@@ -16,10 +16,10 @@ check_model_endpoint() {
     model_id=$(echo "$response" | jq -r '.data[0].id')
 
     if [[ -n "$model_id" && "$model_id" != "null" ]]; then
-        log INFO "Model endpoint is valid: $model_id"
+        echo "INFO: Model endpoint is valid: $model_id"
         echo "$model_id"
     else
-        log ERROR "Model endpoint is not valid or model ID missing"
+        echo "ERROR: Model endpoint is not valid or model ID missing"
         return 1
     fi
     if [[ -z "$MODEL_NAME" ]]; then

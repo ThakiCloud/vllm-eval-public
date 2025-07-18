@@ -171,9 +171,9 @@ def convert_file(input_path, output_path, model_id, run_id=None):
     meta = standardized_json["meta"]
     url = os.environ.get("BACKEND_API", "http://localhost:8000")
     input_url = f"{url}/raw_input"
-    send_to_endpoint(input_url, raw_input_data, "original input data", run_id, meta["benchmark_name"], meta["timestamp"], meta["model"]["id"], meta["model"]["tokenizer_id"], meta["model"]["source"])  
+    send_to_endpoint(input_url, raw_input_data, "original input data", meta["run_id"], meta["benchmark_name"], meta["timestamp"], meta["model"]["id"], meta["model"]["tokenizer_id"], meta["model"]["source"])  
     output_url = f"{url}/standardized_output"
-    send_to_endpoint(output_url, standardized_data_json, "standardized output data", run_id, meta["benchmark_name"], meta["timestamp"], meta["model"]["id"], meta["model"]["tokenizer_id"], meta["model"]["source"])
+    send_to_endpoint(output_url, standardized_data_json, "standardized output data", meta["run_id"], meta["benchmark_name"], meta["timestamp"], meta["model"]["id"], meta["model"]["tokenizer_id"], meta["model"]["source"])
     
     return True
 

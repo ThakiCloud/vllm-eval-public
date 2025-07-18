@@ -6,7 +6,7 @@
   
   "benchmarks": {
     "AIME24": {
-      "enabled": true,
+      "enabled": false,
       "description": "AIME 2024 Benchmark",
       "tasks": ["AIME24"]
     },
@@ -61,17 +61,17 @@
       "tasks": ["super_glue"]
     },
     "AMC23": {
-      "enabled": true,
+      "enabled": false,
       "description": "AMC 2023 - American Mathematics Competitions",
       "tasks": ["AMC23"]
     },
     "MATH500": {
-      "enabled": true,
+      "enabled": false,
       "description": "MATH500 - Mathematical reasoning benchmark",
       "tasks": ["MATH500"]
     },
     "GPQADiamond": {
-      "enabled": true,
+      "enabled": false,
       "description": "GPQA Diamond - Graduate-level science questions",
       "tasks": ["GPQADiamond"]
     },
@@ -105,8 +105,6 @@
   "model_configs": {
     "vllm_api_config": {
       "model_type": "curator",
-      "base_url": "http://vllm:8000/v1",
-      "model_args": "model=qwen3-8b,tokenizer=Qwen/Qwen3-8b,tokenizer_backend=huggingface",
       "api_config": {
         "max_retries": 3,
         "retry_delay": 5.0
@@ -260,7 +258,7 @@
     },
     
     "AMC23": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["AMC23"],
       "description": "AMC 2023 - American Mathematics Competitions",
       "metrics": ["acc"],
@@ -271,7 +269,7 @@
     },
     
     "MATH500": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["MATH500"],
       "description": "MATH500 - Mathematical reasoning benchmark",
       "metrics": ["acc"],
@@ -282,7 +280,7 @@
     },
     
     "GPQADiamond": {
-      "enabled": true,
+      "enabled": false,
       "tasks": ["GPQADiamond"],
       "description": "GPQA Diamond - Graduate-level science questions",
       "metrics": ["acc"],
