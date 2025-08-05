@@ -781,31 +781,106 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#standard-evalchemy-bencharking" class="md-nav__link">
-    Standard Evalchemy Bencharking
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
   </a>
   
-    <nav class="md-nav" aria-label="Standard Evalchemy Bencharking">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#execution-methods" class="md-nav__link">
+    Execution Methods
+  </a>
+  
+    <nav class="md-nav" aria-label="Execution Methods">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#docker-run" class="md-nav__link">
-    Docker Run
-  </a>
-  
-    <nav class="md-nav" aria-label="Docker Run">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#run-a-container-from-built-docker-image" class="md-nav__link">
-    Run a container from built docker image:
+  <a href="#1-docker-execution-recommended" class="md-nav__link">
+    1. Docker Execution (Recommended)
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#parsed-and-results-folders-will-be-created" class="md-nav__link">
-    parsed and results folders will be created:
+  <a href="#2-script-execution" class="md-nav__link">
+    2. Script Execution
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-based-evaluation" class="md-nav__link">
+    Docker-Based Evaluation
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker-Based Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-the-container" class="md-nav__link">
+    Building the Container
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#container-execution" class="md-nav__link">
+    Container Execution
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables-explained" class="md-nav__link">
+    Environment Variables Explained
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-structure" class="md-nav__link">
+    Output Structure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#script-based-evaluation" class="md-nav__link">
+    Script-Based Evaluation
+  </a>
+  
+    <nav class="md-nav" aria-label="Script-Based Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-setup" class="md-nav__link">
+    Environment Setup
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-core-dependencies" class="md-nav__link">
+    Install Core Dependencies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-evalchemy-library" class="md-nav__link">
+    Install Evalchemy Library
   </a>
   
 </li>
@@ -816,30 +891,49 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#bash-run" class="md-nav__link">
-    Bash Run
+  <a href="#running-evaluations" class="md-nav__link">
+    Running Evaluations
   </a>
   
-    <nav class="md-nav" aria-label="Bash Run">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script-output-structure" class="md-nav__link">
+    Script Output Structure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-configuration" class="md-nav__link">
+    Advanced Configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Configuration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#libraries-needs-to-be-installed-in-vllm-eval-public-folder" class="md-nav__link">
-    Libraries needs to be installed in vllm-eval-public folder
+  <a href="#custom-benchmark-selection" class="md-nav__link">
+    Custom Benchmark Selection
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#run_evalchemysh-can-be-run-now" class="md-nav__link">
-    run_evalchemy.sh can be run now:
+  <a href="#performance-tuning" class="md-nav__link">
+    Performance Tuning
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#parsed-and-results-folders-will-be-created_1" class="md-nav__link">
-    parsed and results folders will be created:
+  <a href="#multi-gpu-evaluation" class="md-nav__link">
+    Multi-GPU Evaluation
   </a>
   
 </li>
@@ -848,9 +942,112 @@
     </nav>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmark-coverage" class="md-nav__link">
+    Benchmark Coverage
+  </a>
+  
+    <nav class="md-nav" aria-label="Benchmark Coverage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-academic-benchmarks" class="md-nav__link">
+    Standard Academic Benchmarks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-benchmark-integration" class="md-nav__link">
+    Custom Benchmark Integration
+  </a>
+  
+</li>
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#result-analysis" class="md-nav__link">
+    Result Analysis
+  </a>
+  
+    <nav class="md-nav" aria-label="Result Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metric-interpretation" class="md-nav__link">
+    Metric Interpretation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparative-analysis" class="md-nav__link">
+    Comparative Analysis
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-vllm-eval-pipeline" class="md-nav__link">
+    Integration with VLLM Eval Pipeline
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration with VLLM Eval Pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automated-pipeline-integration" class="md-nav__link">
+    Automated Pipeline Integration
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    Common Issues
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-mode" class="md-nav__link">
+    Debug Mode
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next Steps
+  </a>
   
 </li>
       
@@ -1119,31 +1316,106 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#standard-evalchemy-bencharking" class="md-nav__link">
-    Standard Evalchemy Bencharking
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
   </a>
   
-    <nav class="md-nav" aria-label="Standard Evalchemy Bencharking">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#execution-methods" class="md-nav__link">
+    Execution Methods
+  </a>
+  
+    <nav class="md-nav" aria-label="Execution Methods">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#docker-run" class="md-nav__link">
-    Docker Run
-  </a>
-  
-    <nav class="md-nav" aria-label="Docker Run">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#run-a-container-from-built-docker-image" class="md-nav__link">
-    Run a container from built docker image:
+  <a href="#1-docker-execution-recommended" class="md-nav__link">
+    1. Docker Execution (Recommended)
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#parsed-and-results-folders-will-be-created" class="md-nav__link">
-    parsed and results folders will be created:
+  <a href="#2-script-execution" class="md-nav__link">
+    2. Script Execution
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-based-evaluation" class="md-nav__link">
+    Docker-Based Evaluation
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker-Based Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-the-container" class="md-nav__link">
+    Building the Container
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#container-execution" class="md-nav__link">
+    Container Execution
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables-explained" class="md-nav__link">
+    Environment Variables Explained
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-structure" class="md-nav__link">
+    Output Structure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#script-based-evaluation" class="md-nav__link">
+    Script-Based Evaluation
+  </a>
+  
+    <nav class="md-nav" aria-label="Script-Based Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-setup" class="md-nav__link">
+    Environment Setup
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-core-dependencies" class="md-nav__link">
+    Install Core Dependencies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-evalchemy-library" class="md-nav__link">
+    Install Evalchemy Library
   </a>
   
 </li>
@@ -1154,30 +1426,49 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#bash-run" class="md-nav__link">
-    Bash Run
+  <a href="#running-evaluations" class="md-nav__link">
+    Running Evaluations
   </a>
   
-    <nav class="md-nav" aria-label="Bash Run">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script-output-structure" class="md-nav__link">
+    Script Output Structure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-configuration" class="md-nav__link">
+    Advanced Configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Configuration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#libraries-needs-to-be-installed-in-vllm-eval-public-folder" class="md-nav__link">
-    Libraries needs to be installed in vllm-eval-public folder
+  <a href="#custom-benchmark-selection" class="md-nav__link">
+    Custom Benchmark Selection
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#run_evalchemysh-can-be-run-now" class="md-nav__link">
-    run_evalchemy.sh can be run now:
+  <a href="#performance-tuning" class="md-nav__link">
+    Performance Tuning
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#parsed-and-results-folders-will-be-created_1" class="md-nav__link">
-    parsed and results folders will be created:
+  <a href="#multi-gpu-evaluation" class="md-nav__link">
+    Multi-GPU Evaluation
   </a>
   
 </li>
@@ -1186,9 +1477,112 @@
     </nav>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmark-coverage" class="md-nav__link">
+    Benchmark Coverage
+  </a>
+  
+    <nav class="md-nav" aria-label="Benchmark Coverage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-academic-benchmarks" class="md-nav__link">
+    Standard Academic Benchmarks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-benchmark-integration" class="md-nav__link">
+    Custom Benchmark Integration
+  </a>
+  
+</li>
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#result-analysis" class="md-nav__link">
+    Result Analysis
+  </a>
+  
+    <nav class="md-nav" aria-label="Result Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metric-interpretation" class="md-nav__link">
+    Metric Interpretation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparative-analysis" class="md-nav__link">
+    Comparative Analysis
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-vllm-eval-pipeline" class="md-nav__link">
+    Integration with VLLM Eval Pipeline
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration with VLLM Eval Pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automated-pipeline-integration" class="md-nav__link">
+    Automated Pipeline Integration
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    Common Issues
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-mode" class="md-nav__link">
+    Debug Mode
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next Steps
+  </a>
   
 </li>
       
@@ -1211,18 +1605,55 @@
 
 
 <h1 id="evalchemy-api">Evalchemy API<a class="headerlink" href="#evalchemy-api" title="Permanent link">&para;</a></h1>
-<h2 id="standard-evalchemy-bencharking">Standard Evalchemy Bencharking<a class="headerlink" href="#standard-evalchemy-bencharking" title="Permanent link">&para;</a></h2>
-<p>Evalchemy supports two evaluation methods, and you can choose either of the following:</p>
-<ol>
-<li>Using Docker – build a Docker image and run the benchmark inside a container.</li>
-<li>Using a script – directly run the provided benchmark script without Docker.</li>
-</ol>
-<h3 id="docker-run">Docker Run<a class="headerlink" href="#docker-run" title="Permanent link">&para;</a></h3>
-<p>Build Docker Image:</p>
+<p>Evalchemy is a unified benchmark runner built on EleutherAI's lm-evaluation-harness, providing comprehensive evaluation capabilities for large language models. It supports both standard academic benchmarks and custom evaluation tasks with flexible API-based model integration.</p>
+<div class="admonition info">
+<p class="admonition-title">Evalchemy Overview</p>
+<p>Evalchemy provides:</p>
+<ul>
+<li><strong>Unified Benchmarking</strong>: Single interface for multiple evaluation frameworks</li>
+<li><strong>Standard Benchmarks</strong>: ARC, HellaSwag, MMLU, Ko-MMLU, Ko-ARC support</li>
+<li><strong>API Integration</strong>: Compatible with VLLM and other serving frameworks</li>
+<li><strong>Flexible Deployment</strong>: Docker and script-based execution options</li>
+</ul>
+</div>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">System Requirements</p>
+<p>Before using Evalchemy, ensure you have:</p>
+<ul>
+<li>Python 3.8+ environment</li>
+<li>A running VLLM server endpoint</li>
+<li>Docker (for containerized execution)</li>
+<li>Sufficient computational resources for benchmark evaluation</li>
+<li>Network connectivity between client and model server</li>
+</ul>
+</div>
+<h2 id="execution-methods">Execution Methods<a class="headerlink" href="#execution-methods" title="Permanent link">&para;</a></h2>
+<p>Evalchemy supports two primary execution approaches, each optimized for different use cases:</p>
+<h3 id="1-docker-execution-recommended">1. Docker Execution (Recommended)<a class="headerlink" href="#1-docker-execution-recommended" title="Permanent link">&para;</a></h3>
+<p><strong>Advantages:</strong>
+- Consistent execution environment
+- Simplified dependency management<br />
+- Easy integration with Kubernetes workflows
+- Reproducible results across systems</p>
+<h3 id="2-script-execution">2. Script Execution<a class="headerlink" href="#2-script-execution" title="Permanent link">&para;</a></h3>
+<p><strong>Advantages:</strong>
+- Direct system access for debugging
+- Faster iteration during development
+- Custom environment configuration
+- Local filesystem integration</p>
+<h2 id="docker-based-evaluation">Docker-Based Evaluation<a class="headerlink" href="#docker-based-evaluation" title="Permanent link">&para;</a></h2>
+<h3 id="building-the-container">Building the Container<a class="headerlink" href="#building-the-container" title="Permanent link">&para;</a></h3>
+<p>Create the Evalchemy Docker image:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>docker/standard_evalchemy.Dockerfile<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span>-t<span class="w"> </span>standard-evalchemy:latest<span class="w"> </span>.
 </span></code></pre></div>
-<h4 id="run-a-container-from-built-docker-image">Run a container from built docker image:<a class="headerlink" href="#run-a-container-from-built-docker-image" title="Permanent link">&para;</a></h4>
+<div class="admonition tip">
+<p class="admonition-title">Image Optimization</p>
+<p>The Docker build process includes optimized dependency installation and caching for faster subsequent builds.</p>
+</div>
+<h3 id="container-execution">Container Execution<a class="headerlink" href="#container-execution" title="Permanent link">&para;</a></h3>
+<p>Run comprehensive benchmarks in a containerized environment:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--network<span class="w"> </span>host<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">VLLM_MODEL_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/v1/completions&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -1235,27 +1666,50 @@
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span>standard-evalchemy:latest
 </span></code></pre></div>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><code>--network host</code> - solution to MODEL ID or MODEL NAME issue</p>
+<p class="admonition-title">Network Configuration</p>
+<p><code>--network host</code> resolves MODEL ID and MODEL NAME resolution issues by providing direct access to the host network stack.</p>
 </div>
-<h4 id="parsed-and-results-folders-will-be-created"><code>parsed</code> and <code>results</code> folders will be created:<a class="headerlink" href="#parsed-and-results-folders-will-be-created" title="Permanent link">&para;</a></h4>
+<h3 id="environment-variables-explained">Environment Variables Explained<a class="headerlink" href="#environment-variables-explained" title="Permanent link">&para;</a></h3>
+<p><strong>Model Configuration:</strong>
+- <code>VLLM_MODEL_ENDPOINT</code>: Complete API endpoint URL including path
+- <code>MODEL_NAME</code>: HuggingFace model identifier
+- <code>SERVED_MODEL_NAME</code>: Model name as configured in VLLM server
+- <code>TOKENIZER</code>: Tokenizer specification for accurate token counting
+- <code>TOKENIZER_BACKEND</code>: Backend implementation (<code>huggingface</code>, <code>tiktoken</code>)</p>
+<p><strong>Evaluation Configuration:</strong>
+- <code>MODEL_CONFIG</code>: JSON configuration for API behavior and retries
+- <code>EVALUATION_CONFIG</code>: Benchmark parameters including limits and output format</p>
+<h3 id="output-structure">Output Structure<a class="headerlink" href="#output-structure" title="Permanent link">&para;</a></h3>
+<p>After execution, results are organized in the following structure:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>├──<span class="w"> </span>eval/
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>│<span class="w">   </span>└──<span class="w"> </span>standard_evalchemy/
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│<span class="w">       </span>├──<span class="w"> </span>parsed/
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│<span class="w">       </span>└──<span class="w"> </span>results/
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│<span class="w">       </span>├──<span class="w"> </span>parsed/<span class="w">          </span><span class="c1"># Processed benchmark data</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│<span class="w">       </span>└──<span class="w"> </span>results/<span class="w">         </span><span class="c1"># Evaluation outcomes and metrics</span>
 </span></code></pre></div>
-<h3 id="bash-run">Bash Run<a class="headerlink" href="#bash-run" title="Permanent link">&para;</a></h3>
-<h4 id="libraries-needs-to-be-installed-in-vllm-eval-public-folder">Libraries needs to be installed in <code>vllm-eval-public</code> folder<a class="headerlink" href="#libraries-needs-to-be-installed-in-vllm-eval-public-folder" title="Permanent link">&para;</a></h4>
-<p>Install <code>requirements-dev.txt</code>:</p>
+<div class="admonition success">
+<p class="admonition-title">Output Details</p>
+<ul>
+<li><strong>parsed/</strong>: Contains preprocessed benchmark questions and expected answers</li>
+<li><strong>results/</strong>: Includes model responses, accuracy metrics, and detailed analysis</li>
+</ul>
+</div>
+<h2 id="script-based-evaluation">Script-Based Evaluation<a class="headerlink" href="#script-based-evaluation" title="Permanent link">&para;</a></h2>
+<h3 id="environment-setup">Environment Setup<a class="headerlink" href="#environment-setup" title="Permanent link">&para;</a></h3>
+<h4 id="install-core-dependencies">Install Core Dependencies<a class="headerlink" href="#install-core-dependencies" title="Permanent link">&para;</a></h4>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements-dev.txt
 </span></code></pre></div>
-<p>Install <code>evalchemy</code> library:</p>
+<h4 id="install-evalchemy-library">Install Evalchemy Library<a class="headerlink" href="#install-evalchemy-library" title="Permanent link">&para;</a></h4>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ThakiCloud/evalchemy.git
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">cd</span><span class="w"> </span>evalchemy
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>pip<span class="w"> </span>install<span class="w"> </span>.<span class="w"> </span>-e
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nb">cd</span><span class="w"> </span>..
 </span></code></pre></div>
-<h4 id="run_evalchemysh-can-be-run-now"><code>run_evalchemy.sh</code> can be run now:<a class="headerlink" href="#run_evalchemysh-can-be-run-now" title="Permanent link">&para;</a></h4>
+<div class="admonition warning">
+<p class="admonition-title">Editable Installation</p>
+<p>The <code>-e</code> flag installs Evalchemy in editable mode, allowing for local modifications and development.</p>
+</div>
+<h3 id="running-evaluations">Running Evaluations<a class="headerlink" href="#running-evaluations" title="Permanent link">&para;</a></h3>
+<p>Execute benchmarks using the provided shell script:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./run_evalchemy.sh<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--endpoint<span class="w"> </span>http://localhost:8000/v1/completions<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--model-name<span class="w"> </span><span class="s2">&quot;facebook/opt-125m&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -1264,12 +1718,151 @@
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--batch-size<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>--run-id<span class="w"> </span>test_01
 </span></code></pre></div>
-<h4 id="parsed-and-results-folders-will-be-created_1"><code>parsed</code> and <code>results</code> folders will be created:<a class="headerlink" href="#parsed-and-results-folders-will-be-created_1" title="Permanent link">&para;</a></h4>
+<p><strong>Script Parameters:</strong>
+- <code>--endpoint</code>: API endpoint for model inference
+- <code>--model-name</code>: Model identifier for evaluation context
+- <code>--tokenizer</code>: Tokenizer specification for proper preprocessing
+- <code>--tokenizer-backend</code>: Tokenization implementation choice
+- <code>--batch-size</code>: Number of parallel requests (adjust based on server capacity)
+- <code>--run-id</code>: Unique identifier for tracking evaluation runs</p>
+<h3 id="script-output-structure">Script Output Structure<a class="headerlink" href="#script-output-structure" title="Permanent link">&para;</a></h3>
+<p>Results are generated in the same directory structure:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>├──<span class="w"> </span>eval/
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>│<span class="w">   </span>└──<span class="w"> </span>standard_evalchemy/
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>│<span class="w">       </span>├──<span class="w"> </span>parsed/
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>│<span class="w">       </span>└──<span class="w"> </span>results/
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>│<span class="w">       </span>├──<span class="w"> </span>parsed/<span class="w">          </span><span class="c1"># Benchmark preprocessing results</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>│<span class="w">       </span>└──<span class="w"> </span>results/<span class="w">         </span><span class="c1"># Evaluation metrics and analysis</span>
 </span></code></pre></div>
+<h2 id="advanced-configuration">Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="custom-benchmark-selection">Custom Benchmark Selection<a class="headerlink" href="#custom-benchmark-selection" title="Permanent link">&para;</a></h3>
+<p>Modify evaluation parameters by editing configuration files:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Edit benchmark selection</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>vim<span class="w"> </span>configs/evaluation_config.yaml
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Available benchmarks</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>benchmarks:
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span>-<span class="w"> </span>arc_easy
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span>-<span class="w"> </span>arc_challenge<span class="w">  </span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span>-<span class="w"> </span>hellaswag
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span>-<span class="w"> </span>mmlu
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span>-<span class="w"> </span>ko_mmlu
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">  </span>-<span class="w"> </span>ko_arc
+</span></code></pre></div>
+<h3 id="performance-tuning">Performance Tuning<a class="headerlink" href="#performance-tuning" title="Permanent link">&para;</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">Optimization Tips</p>
+<p><strong>For High-Throughput Evaluation:</strong>
+- Increase <code>--batch-size</code> based on server capacity
+- Configure appropriate retry policies in <code>MODEL_CONFIG</code>
+- Monitor server resource utilization during evaluation</p>
+<p><strong>For Memory-Constrained Environments:</strong>
+- Reduce batch size to minimize memory usage
+- Use streaming evaluation for large datasets
+- Configure appropriate timeouts to prevent hanging requests</p>
+</div>
+<h3 id="multi-gpu-evaluation">Multi-GPU Evaluation<a class="headerlink" href="#multi-gpu-evaluation" title="Permanent link">&para;</a></h3>
+<p>For accelerated evaluation on multi-GPU systems:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span>--gpus<span class="w"> </span>all<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span>--network<span class="w"> </span>host<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="s2">&quot;0,1,2,3&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">VLLM_MODEL_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/v1/completions&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="c1"># ... other environment variables</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span>standard-evalchemy:latest
+</span></code></pre></div>
+<h2 id="benchmark-coverage">Benchmark Coverage<a class="headerlink" href="#benchmark-coverage" title="Permanent link">&para;</a></h2>
+<h3 id="standard-academic-benchmarks">Standard Academic Benchmarks<a class="headerlink" href="#standard-academic-benchmarks" title="Permanent link">&para;</a></h3>
+<div class="admonition info">
+<p class="admonition-title">Supported Benchmarks</p>
+<p><strong>English Benchmarks:</strong>
+- <strong>ARC (Easy/Challenge)</strong>: Science question answering
+- <strong>HellaSwag</strong>: Commonsense reasoning completion
+- <strong>MMLU</strong>: Massive multitask language understanding</p>
+<p><strong>Korean Benchmarks:</strong>
+- <strong>Ko-MMLU</strong>: Korean multitask language understanding<br />
+- <strong>Ko-ARC</strong>: Korean science question answering</p>
+</div>
+<h3 id="custom-benchmark-integration">Custom Benchmark Integration<a class="headerlink" href="#custom-benchmark-integration" title="Permanent link">&para;</a></h3>
+<p>Evalchemy supports custom benchmark integration:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Custom benchmark configuration</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="p">{</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="s2">&quot;custom_benchmark&quot;</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="s2">&quot;dataset_path&quot;</span><span class="p">:</span> <span class="s2">&quot;/path/to/custom/data.jsonl&quot;</span><span class="p">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;exact_match&quot;</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="s2">&quot;few_shot&quot;</span><span class="p">:</span> <span class="mi">5</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">}</span>
+</span></code></pre></div>
+<h2 id="result-analysis">Result Analysis<a class="headerlink" href="#result-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="metric-interpretation">Metric Interpretation<a class="headerlink" href="#metric-interpretation" title="Permanent link">&para;</a></h3>
+<div class="admonition success">
+<p class="admonition-title">Understanding Results</p>
+<p><strong>Key Metrics:</strong>
+- <strong>Accuracy</strong>: Percentage of correctly answered questions
+- <strong>F1 Score</strong>: Harmonic mean of precision and recall
+- <strong>Exact Match</strong>: Strict equality comparison for answers
+- <strong>BLEU Score</strong>: Text similarity for generative tasks</p>
+</div>
+<h3 id="comparative-analysis">Comparative Analysis<a class="headerlink" href="#comparative-analysis" title="Permanent link">&para;</a></h3>
+<p>Results include comparative analysis against baseline models:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qwen/Qwen2-0.5B&quot;</span><span class="p">,</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">&quot;benchmark&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;arc_easy&quot;</span><span class="p">,</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">&quot;accuracy&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.785</span><span class="p">,</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nt">&quot;baseline_comparison&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">        </span><span class="nt">&quot;random_baseline&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.25</span><span class="p">,</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">        </span><span class="nt">&quot;human_performance&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.95</span><span class="p">,</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">        </span><span class="nt">&quot;relative_performance&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.713</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="p">}</span>
+</span></code></pre></div>
+<h2 id="integration-with-vllm-eval-pipeline">Integration with VLLM Eval Pipeline<a class="headerlink" href="#integration-with-vllm-eval-pipeline" title="Permanent link">&para;</a></h2>
+<h3 id="automated-pipeline-integration">Automated Pipeline Integration<a class="headerlink" href="#automated-pipeline-integration" title="Permanent link">&para;</a></h3>
+<p>Evalchemy integrates seamlessly with the broader VLLM evaluation ecosystem:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Integration with aggregation pipeline</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>python<span class="w"> </span>scripts/aggregate_metrics.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span>--include-evalchemy<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span>--results-dir<span class="w"> </span>eval/standard_evalchemy/results
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Pipeline Compatibility</p>
+<p>Evalchemy results are automatically compatible with the VLLM evaluation aggregation system and ClickHouse analytics pipeline.</p>
+</div>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Troubleshooting Guide</p>
+<p><strong>API Connection Issues:</strong>
+- Verify VLLM server is running and accessible
+- Check endpoint URL format and network connectivity
+- Validate API authentication if required</p>
+<p><strong>Memory Issues:</strong>
+- Reduce batch size for memory-constrained environments
+- Monitor system memory usage during evaluation
+- Consider using swap space for large evaluations</p>
+<p><strong>Performance Issues:</strong>
+- Optimize batch size based on server capacity
+- Configure appropriate retry policies
+- Monitor server resource utilization</p>
+</div>
+<h3 id="debug-mode">Debug Mode<a class="headerlink" href="#debug-mode" title="Permanent link">&para;</a></h3>
+<p>Enable detailed logging for troubleshooting:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span>--network<span class="w"> </span>host<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">DEBUG_MODE</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">LOG_LEVEL</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="c1"># ... other environment variables</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span>standard-evalchemy:latest
+</span></code></pre></div>
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<div class="admonition success">
+<p class="admonition-title">Advanced Usage</p>
+<p>After successful evaluation:</p>
+<ul>
+<li>Analyze results using provided analysis scripts</li>
+<li>Integrate with monitoring and alerting systems</li>
+<li>Configure automated evaluation pipelines</li>
+<li>Develop custom benchmarks for domain-specific evaluation</li>
+</ul>
+</div>
 
 
 
