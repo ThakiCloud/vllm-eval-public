@@ -153,11 +153,11 @@ ENVIRONMENT VARIABLES:
 
 EXAMPLES:
     # Basic usage
-    $SCRIPT_NAME --endpoint http://localhost:8000/v1
+    $SCRIPT_NAME --endpoint http://localhost:8000/v1/completions
 
     # Custom configuration and output
     $SCRIPT_NAME \\
-        --endpoint http://model-api:8000/v1 \\
+        --endpoint http://model-api:8000/v1/completions \\
         --config /path/to/custom_config.json \\
         --output /data/results \\
         --run-id evaluation_20240101
@@ -173,7 +173,7 @@ EXAMPLES:
 
     # Validation and dry-run
     $SCRIPT_NAME --validate-config --config custom.json
-    $SCRIPT_NAME --dry-run --endpoint http://localhost:8000/v1
+    $SCRIPT_NAME --dry-run --endpoint http://localhost:8000/v1/completions
 
 EOF
 }
@@ -232,8 +232,8 @@ check_dependencies() {
     local missing_deps=()
     
     # Check Python
-    if ! command -v python3 &> /dev/null; then
-        missing_deps+=("python3")
+    if ! command -v python &> /dev/null; then
+        missing_deps+=("python")
     fi
     
     # Check pip packages
@@ -249,8 +249,8 @@ check_dependencies() {
     )
     
     for package in "${python_packages[@]}"; do
-        if ! python3 -c "import $package" &> /dev/null; then
-            missing_deps+=("python3-$package")
+        if ! python -c "import $package" &> /dev/null; then
+            missing_deps+=("python-$package")
         fi
     done
     
@@ -524,7 +524,7 @@ run_benchmark() {
     fi
     
     # Execute benchmark
-    if OPENAI_API_KEY=dummy python3 -m lm_eval "${cmd_args[@]}" \
+    if OPENAI_API_KEY=dummy python -m lm_eval "${cmd_args[@]}" \
         > "$benchmark_log" 2>&1; then
         
         local benchmark_end_time=$(date +%s)
@@ -660,7 +660,7 @@ standardize_results() {
             
             log INFO "Standardizing $input_to_standardize -> $output_file"
 
-            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID" --benchmark_name "$benchmark_name" --tasks "$benchmark_array"; then
+            if python "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID" --benchmark_name "$benchmark_name" --tasks "$benchmark_array"; then
                 log INFO "Successfully standardized $base_stem"
             else
                 log ERROR "Failed to standardize $base_stem"
