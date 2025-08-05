@@ -40,7 +40,7 @@ def _add_evaluation_argument(parser):
     group.add_argument('--temperature', type=float, default=0)
     group.add_argument('--topk', type=int, default=1)
     group.add_argument('--topp', type=float, default=1)
-    group.add_argument('--max-output-len', type=int, default=2048)
+    group.add_argument('--max-output-len', type=int, default=512)
     group.add_argument('--start-idx', type=int, default=-1)
     group.add_argument('--end-idx', type=int, default=-1)
     group.add_argument('--tensor-parallel-size', type=int, default=1)
@@ -99,7 +99,7 @@ def preprocess_livecodebench(data_file, model_type):
         prompt_list.append(final_prompt)
         qid_list.append(item['question_id'])
     
-    return prompt_list, qid_list
+    return prompt_list[:50], qid_list[:50]
 
 def preprocess_aime(data_file, model_type):
     
