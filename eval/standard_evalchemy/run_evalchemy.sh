@@ -318,12 +318,12 @@ check_dependencies() {
     local missing_deps=()
     
     # Check Python
-    if ! command -v python3 &> /dev/null; then
-        missing_deps+=("python3")
+    if ! command -v python &> /dev/null; then
+        missing_deps+=("python")
     fi
     
     # Check if we can import eval.eval module
-    if ! python3 -c "import eval.eval" &> /dev/null; then
+    if ! python -c "import eval.eval" &> /dev/null; then
         log ERROR "Cannot import eval.eval module - evalchemy may not be properly installed"
         return 1
     fi
@@ -625,7 +625,7 @@ standardize_results() {
             
             log INFO "Standardizing $input_to_standardize -> $output_file"
 
-            if python3 "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID" --benchmark_name "$benchmark_name" --tasks "$tasks"; then
+            if python "$standardize_script_path" "$input_to_standardize" --output_file "$output_file" --run_id "$RUN_ID" --benchmark_name "$benchmark_name" --tasks "$tasks"; then
                 log INFO "Successfully standardized $base_stem"
             else
                 log ERROR "Failed to standardize $base_stem"

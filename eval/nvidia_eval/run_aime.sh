@@ -71,7 +71,7 @@ done
 
 echo "🔍 Starting AIME 2024 evaluation..."
 if [ -d "${OUTPUT_FOLDER_NAME}" ]; then
-    python evaluate_aime.py --modelfolder ${OUTPUT_FOLDER_NAME} --test_data data/aime24.jsonl
+    python evaluate_aime.py --generation-path ${OUTPUT_FOLDER_NAME} --question-path data/aime24.jsonl
     
     # 결과 파일 확인 및 이동
     if [ -f "${OUTPUT_FOLDER_NAME}/aime24_evaluation_results.json" ]; then
@@ -93,7 +93,7 @@ done
 
 echo "🔍 Starting AIME 2025 evaluation..."
 if [ -d "${OUTPUT_FOLDER_NAME}" ]; then
-    python evaluate_aime.py --modelfolder ${OUTPUT_FOLDER_NAME} --test_data data/aime25.jsonl
+    python evaluate_aime.py --generation-path ${OUTPUT_FOLDER_NAME} --question-path data/aime25.jsonl
     
     # 결과 파일 확인 및 이동
     if [ -f "${OUTPUT_FOLDER_NAME}/aime25_evaluation_results.json" ]; then

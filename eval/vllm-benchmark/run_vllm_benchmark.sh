@@ -30,7 +30,7 @@ echo "===============================================" | tee -a "$MAIN_LOG_FILE"
 CONFIG_JSON=$(cat $CONFIG_PATH)
 
 # 시나리오 개수 확인
-SCENARIO_COUNT=$(echo "$CONFIG_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data['scenarios']))")
+SCENARIO_COUNT=$(echo "$CONFIG_JSON" | python -c "import sys, json; data=json.load(sys.stdin); print(len(data['scenarios']))")
 echo "📊 발견된 시나리오 개수: $SCENARIO_COUNT" | tee -a "$MAIN_LOG_FILE"
 
 if [ "$SCENARIO_COUNT" -eq 0 ]; then
@@ -39,7 +39,7 @@ if [ "$SCENARIO_COUNT" -eq 0 ]; then
 fi
 
 # defaults 설정 추출
-DEFAULTS_JSON=$(echo "$CONFIG_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(json.dumps(data['defaults']))")
+DEFAULTS_JSON=$(echo "$CONFIG_JSON" | python -c "import sys, json; data=json.load(sys.stdin); print(json.dumps(data['defaults']))")
 
 check_model_endpoint() {
     local base_url="$1"
@@ -50,6 +50,7 @@ check_model_endpoint() {
 
     # jq로 id 추출
     model_id=$(echo "$response" | jq -r '.data[0].id')
+    echo "INFO: Model endpoint is : $model_id"
 
     if [[ -n "$model_id" && "$model_id" != "null" ]]; then
         echo "INFO: Model endpoint is valid: $model_id"
@@ -74,7 +75,7 @@ for i in $(seq 0 $((SCENARIO_COUNT - 1))); do
     echo "===============================================" | tee -a "$MAIN_LOG_FILE"
     
     # 현재 시나리오 정보 추출
-    SCENARIO_JSON=$(echo "$CONFIG_JSON" | python3 -c "
+    SCENARIO_JSON=$(echo "$CONFIG_JSON" | python -c "
 import sys, json
 data = json.load(sys.stdin)
 scenario = data['scenarios'][$i]
@@ -86,20 +87,20 @@ print(json.dumps(merged))
 ")
     
     # 시나리오별 설정 추출
-    SCENARIO_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('name', 'unknown'))")
-    SCENARIO_DESC=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('description', 'No description'))")
-    MODEL_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('model', ''))")
-    SERVED_MODEL_NAME=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('served_model_name', data.get('model', '')))")
-    TOKENIZER=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('tokenizer', data.get('model', 'gpt2')))")
-    ENDPOINT_PATH=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('endpoint_path', '/v1/chat/completions'))")
-    MAX_CONCURRENCY=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('max_concurrency', 1))")
-    RANDOM_INPUT_LEN=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('random_input_len', 1024))")
-    RANDOM_OUTPUT_LEN=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('random_output_len', 128))")
-    NUM_PROMPTS=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('num_prompts', data.get('max_concurrency', 1) * 2))")
-    BACKEND=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('backend', 'openai-chat'))")
-    DATASET_TYPE=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('dataset_type', 'random'))")
-    PERCENTILE_METRICS=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('percentile_metrics', 'ttft,tpot,itl,e2el'))")
-    METRIC_PERCENTILES=$(echo "$SCENARIO_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('metric_percentiles', '25,50,75,90,95,99'))")
+    SCENARIO_NAME=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('name', 'unknown'))")
+    SCENARIO_DESC=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('description', 'No description'))")
+    MODEL_NAME=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('model', ''))")
+    SERVED_MODEL_NAME=$(echo "$SCENARIO_JSON" | python -c "import sys, json; data=json.load(sys.stdin); print(data.get('served_model_name', data.get('model', '')))")
+    TOKENIZER=$(echo "$SCENARIO_JSON" | python -c "import sys, json; data=json.load(sys.stdin); print(data.get('tokenizer', data.get('model', 'gpt2')))")
+    ENDPOINT_PATH=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('endpoint_path', '/v1/chat/completions'))")
+    MAX_CONCURRENCY=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('max_concurrency', 1))")
+    RANDOM_INPUT_LEN=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('random_input_len', 1024))")
+    RANDOM_OUTPUT_LEN=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('random_output_len', 128))")
+    NUM_PROMPTS=$(echo "$SCENARIO_JSON" | python -c "import sys, json; data=json.load(sys.stdin); print(data.get('num_prompts', data.get('max_concurrency', 1) * 2))")
+    BACKEND=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('backend', 'openai-chat'))")
+    DATASET_TYPE=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('dataset_type', 'random'))")
+    PERCENTILE_METRICS=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('percentile_metrics', 'ttft,tpot,itl,e2el'))")
+    METRIC_PERCENTILES=$(echo "$SCENARIO_JSON" | python -c "import sys, json; print(json.load(sys.stdin).get('metric_percentiles', '25,50,75,90,95,99'))")
     
     # 시나리오별 결과 파일
     SCENARIO_RESULT_DIR="$OUTPUT_DIR/scenario_${SCENARIO_NAME}_${TIMESTAMP}"
@@ -122,7 +123,7 @@ print(json.dumps(merged))
     
     # VLLM 공식 benchmark_serving.py 실행
     echo "⚡ 벤치마크 실행 시작..." | tee -a "$MAIN_LOG_FILE"
-    cd /app/benchmarks && python3 benchmark_serving.py \
+    cd /app/benchmarks && python benchmark_serving.py \
         --backend "$BACKEND" \
         --base-url "$VLLM_ENDPOINT" \
         --endpoint "$ENDPOINT_PATH" \
@@ -149,14 +150,14 @@ print(json.dumps(merged))
         RESULT_JSON=$(find "$SCENARIO_RESULT_DIR" -name "*.json" -type f | head -1)
         if [ -n "$RESULT_JSON" ] && [ -f "$RESULT_JSON" ]; then
             echo "📈 시나리오 '$SCENARIO_NAME' 결과 분석 중: $RESULT_JSON" | tee -a "$MAIN_LOG_FILE"
-            python3 /app/scripts/analyze_vllm_results.py "$RESULT_JSON" | tee -a "$MAIN_LOG_FILE"
+            python /app/scripts/analyze_vllm_results.py "$RESULT_JSON" | tee -a "$MAIN_LOG_FILE"
             
             # 표준화된 JSON 파일 경로 생성
             STANDARDIZED_FILENAME="${SCENARIO_NAME}_${TIMESTAMP}_standardized.json"
             STANDARDIZED_JSON_PATH="$PARSED_DIR/$STANDARDIZED_FILENAME"
 
             echo "🔄 결과 표준화 중 -> $STANDARDIZED_JSON_PATH" | tee -a "$MAIN_LOG_FILE"
-            python3 /app/scripts/standardize_vllm_benchmark.py "$RESULT_JSON" --output_file "$STANDARDIZED_JSON_PATH" --task_name "$SCENARIO_NAME" --config_path "$CONFIG_PATH" | tee -a "$MAIN_LOG_FILE"
+            python /app/scripts/standardize_vllm_benchmark.py "$RESULT_JSON" --output_file "$STANDARDIZED_JSON_PATH" --task_name "$SCENARIO_NAME" --config_path "$CONFIG_PATH" | tee -a "$MAIN_LOG_FILE"
         else
             echo "⚠️  시나리오 '$SCENARIO_NAME' 결과 JSON 파일을 찾을 수 없습니다: $SCENARIO_RESULT_DIR" | tee -a "$MAIN_LOG_FILE"
         fi

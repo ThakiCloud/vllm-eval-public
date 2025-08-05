@@ -139,7 +139,7 @@ LABEL description="Optimized lightweight Docker image for AceReason Toolkit - AP
 LABEL gpu.required="false"
 
 # 도커 빌드
-# docker build -f docker/nvidia_eval.Dockerfile  -t nvidia-eval-standard --no-cache
+# docker build -f . docker/nvidia_eval.Dockerfile  -t nvidia-eval-standard --no-cache
 #
 # 실행 예시 [AIME, LCB 모두 평가]
 #   docker run -e API_BASE=http://host.docker.internal:port/v1 \

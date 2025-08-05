@@ -8,10 +8,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      build-essential cmake ninja-build git curl libnuma-dev \
-      gcc-12 g++-12 python3-dev && \
+    build-essential cmake ninja-build git curl libnuma-dev \
+    gcc-12 g++-12 python3-dev && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 20 \
-                        --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
+    --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN python -m venv /opt/venv
@@ -23,7 +23,7 @@ RUN git clone https://github.com/vllm-project/vllm.git /tmp/vllm
 WORKDIR /tmp/vllm
 
 RUN pip install -v -r requirements/cpu.txt \
-      --extra-index-url https://download.pytorch.org/whl/cpu && \
+    --extra-index-url https://download.pytorch.org/whl/cpu && \
     VLLM_TARGET_DEVICE=cpu python setup.py install
 
 # 전체 benchmarks 디렉토리 복사 (모든 의존성 포함)
@@ -44,7 +44,7 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/benchmarks /app/benchmarks
 
-COPY configs/vllm_benchmark.json /app/configs/eval_config.json
+COPY configs/vllm_benchmark.json /app/configs/vllm_benchmark.json
 COPY eval/vllm-benchmark/ /app/scripts/
 COPY scripts/standardize_vllm_benchmark.py /app/scripts/standardize_vllm_benchmark.py
 
@@ -65,8 +65,8 @@ USER benchuser
 
 ENV VLLM_ENDPOINT="http://localhost:8000" \
     ENDPOINT_PATH="/v1/chat/completions" \
-#    MODEL_NAME="Qwen/Qwen3-8B" \
-#    SERVED_MODEL_NAME="qwen3-8b" \
+    #    MODEL_NAME="Qwen/Qwen3-8B" \
+    #    SERVED_MODEL_NAME="qwen3-8b" \
     OUTPUT_DIR="/app/results" \
     PARSED_DIR="/app/parsed" \
     NUM_PROMPTS="100" \
@@ -76,8 +76,8 @@ ENV VLLM_ENDPOINT="http://localhost:8000" \
     RANDOM_OUTPUT_LEN="128" \
     BACKEND="vllm" \
     DATASET_TYPE="random" \
-#    PERCENTILE_METRICS="ttft,tpot,itl,e2el" \
-#    METRIC_PERCENTILES="25,50,75,90,95,99" \
+    #    PERCENTILE_METRICS="ttft,tpot,itl,e2el" \
+    #    METRIC_PERCENTILES="25,50,75,90,95,99" \
     LOG_LEVEL="INFO" \
     BACKEND_API="http://model-benchmark-backend-svc:8000"
 
