@@ -30,6 +30,7 @@ Evalchemy supports two primary execution approaches, each optimized for differen
 ### 1. Docker Execution (Recommended)
 
 **Advantages:**
+
 - Consistent execution environment
 - Simplified dependency management  
 - Easy integration with Kubernetes workflows
@@ -38,6 +39,7 @@ Evalchemy supports two primary execution approaches, each optimized for differen
 ### 2. Script Execution
 
 **Advantages:**
+
 - Direct system access for debugging
 - Faster iteration during development
 - Custom environment configuration
@@ -65,13 +67,10 @@ Run comprehensive benchmarks in a containerized environment:
 ```bash
 docker run --rm \
     --network host \
+    -v $(pwd)/results:/app/evalchemy-src/results \
     -e VLLM_MODEL_ENDPOINT="http://localhost:8080/v1/completions" \
     -e MODEL_NAME="Qwen/Qwen2-0.5B" \
-    -e SERVED_MODEL_NAME="qwen2-0.5b" \
     -e TOKENIZER="Qwen/Qwen2-0.5B" \
-    -e TOKENIZER_BACKEND="huggingface" \
-    -e MODEL_CONFIG='{"model_type": "curator", "api_config": {"max_retries": 3, "retry_delay": 5.0}}' \
-    -e EVALUATION_CONFIG='{"limit": 100, "output_format": "json", "log_samples": true, "max_tokens": 2000}' \
     standard-evalchemy:latest
 ```
 
@@ -82,6 +81,7 @@ docker run --rm \
 ### Environment Variables Explained
 
 **Model Configuration:**
+
 - `VLLM_MODEL_ENDPOINT`: Complete API endpoint URL including path
 - `MODEL_NAME`: HuggingFace model identifier
 - `SERVED_MODEL_NAME`: Model name as configured in VLLM server
@@ -89,6 +89,7 @@ docker run --rm \
 - `TOKENIZER_BACKEND`: Backend implementation (`huggingface`, `tiktoken`)
 
 **Evaluation Configuration:**
+
 - `MODEL_CONFIG`: JSON configuration for API behavior and retries
 - `EVALUATION_CONFIG`: Benchmark parameters including limits and output format
 
@@ -146,6 +147,7 @@ Execute benchmarks using the provided shell script:
 ```
 
 **Script Parameters:**
+
 - `--endpoint`: API endpoint for model inference
 - `--model-name`: Model identifier for evaluation context
 - `--tokenizer`: Tokenizer specification for proper preprocessing
@@ -189,11 +191,13 @@ benchmarks:
 !!! tip "Optimization Tips"
     
     **For High-Throughput Evaluation:**
+
     - Increase `--batch-size` based on server capacity
     - Configure appropriate retry policies in `MODEL_CONFIG`
     - Monitor server resource utilization during evaluation
     
     **For Memory-Constrained Environments:**
+
     - Reduce batch size to minimize memory usage
     - Use streaming evaluation for large datasets
     - Configure appropriate timeouts to prevent hanging requests
@@ -219,11 +223,13 @@ docker run --rm \
 !!! info "Supported Benchmarks"
     
     **English Benchmarks:**
+
     - **ARC (Easy/Challenge)**: Science question answering
     - **HellaSwag**: Commonsense reasoning completion
     - **MMLU**: Massive multitask language understanding
     
     **Korean Benchmarks:**
+
     - **Ko-MMLU**: Korean multitask language understanding  
     - **Ko-ARC**: Korean science question answering
 
@@ -248,6 +254,7 @@ Evalchemy supports custom benchmark integration:
 !!! success "Understanding Results"
     
     **Key Metrics:**
+
     - **Accuracy**: Percentage of correctly answered questions
     - **F1 Score**: Harmonic mean of precision and recall
     - **Exact Match**: Strict equality comparison for answers
@@ -294,16 +301,19 @@ python scripts/aggregate_metrics.py \
 !!! warning "Troubleshooting Guide"
     
     **API Connection Issues:**
+
     - Verify VLLM server is running and accessible
     - Check endpoint URL format and network connectivity
     - Validate API authentication if required
     
     **Memory Issues:**
+
     - Reduce batch size for memory-constrained environments
     - Monitor system memory usage during evaluation
     - Consider using swap space for large evaluations
     
     **Performance Issues:**
+    
     - Optimize batch size based on server capacity
     - Configure appropriate retry policies
     - Monitor server resource utilization

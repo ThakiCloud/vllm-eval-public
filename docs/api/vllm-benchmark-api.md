@@ -30,11 +30,13 @@ The VLLM Benchmark API provides comprehensive performance evaluation capabilitie
 !!! tip "Understanding Metrics"
     
     **Throughput Metrics:**
+
     - **Request Throughput**: Completed requests per second
     - **Output Token Throughput**: Generated tokens per second
     - **Total Token Throughput**: Combined input/output tokens per second
     
     **Latency Metrics:**
+
     - **TTFT (Time to First Token)**: Latency until first token generation
     - **TPOT (Time per Output Token)**: Average time between subsequent tokens
     - **ITL (Inter-token Latency)**: Real-time token generation intervals
@@ -121,8 +123,10 @@ docker run --rm \
   -e VLLM_ENDPOINT="http://localhost:8080" \
   -e MODEL_NAME="Qwen/Qwen2-0.5B" \
   -e TOKENIZER="gpt2" \
-  -e OUTPUT_DIR="/workspace/results" \
-  -v $(pwd)/benchmark_results:/workspace/results \
+  -e OUTPUT_DIR="/results" \
+  -e PARSED_DIR="/parsed" \
+  -v $(pwd)/results:/results \
+  -v $(pwd)/parsed:/parsed \
   vllm-benchmark:latest
 ```
 
@@ -137,6 +141,7 @@ docker run --rm \
 Each scenario in the configuration supports the following parameters:
 
 **Core Parameters:**
+
 - `name`: Unique scenario identifier
 - `description`: Human-readable scenario description
 - `max_concurrency`: Maximum concurrent requests
@@ -145,6 +150,7 @@ Each scenario in the configuration supports the following parameters:
 - `random_output_len`: Expected output token length
 
 **Advanced Parameters:**
+
 - `backend`: Backend type (`openai-chat`, `openai`, `tgi`)
 - `endpoint_path`: API endpoint path (e.g., `/v1/chat/completions`)
 - `dataset_type`: Dataset type (`random`, `synthetic`)
@@ -274,8 +280,12 @@ docker run --rm \
   -e VLLM_ENDPOINT="http://localhost:8080" \
   -e MODEL_NAME="Qwen/Qwen2-0.5B" \
   -e TOKENIZER="gpt2" \
+  -e OUTPUT_DIR="/results" \
+  -e PARSED_DIR="/parsed" \
   -e CONCURRENCY_LEVELS="50,100" \
   -e DURATION="600" \
+  -v $(pwd)/results:/results \
+  -v $(pwd)/parsed:/parsed \
   vllm-benchmark:latest
 ```
 
@@ -283,7 +293,7 @@ docker run --rm \
 
 ### Automated Analysis
 
-The benchmark system includes sophisticated analysis capabilities via `analyze_vllm_results.py`:
+The benchmark system includes sophisticated analysis capabilities via `eval/vllm-benchmark/analyze_vllm_results.py`:
 
 ```bash
 # Analyze specific result file
@@ -333,16 +343,19 @@ python scripts/standardize_vllm_benchmark.py \
 !!! warning "Troubleshooting Guide"
     
     **Connection Issues:**
+
     - Verify VLLM server is running and accessible
     - Check network connectivity with `curl` test
     - Ensure firewall rules allow benchmark traffic
     
     **Performance Issues:**
+
     - Monitor GPU/CPU utilization during benchmarks
     - Check for resource contention with other processes
     - Verify model loading completed successfully
     
     **Result Inconsistencies:**
+
     - Run multiple benchmark iterations for statistical stability
     - Account for system warm-up time in measurements
     - Monitor system load during benchmark execution
@@ -378,12 +391,14 @@ python scripts/aggregate_metrics.py \
 !!! tip "Optimization Tips"
     
     **For Accurate Results:**
+
     - Run multiple iterations for statistical stability
     - Allow adequate warm-up time before measurements
     - Monitor system resources during benchmarking
     - Use consistent hardware configurations
     
     **For Production Testing:**
+
     - Configure scenarios matching production workloads
     - Test various concurrency levels progressively
     - Establish baseline performance thresholds
@@ -394,16 +409,19 @@ python scripts/aggregate_metrics.py \
 !!! warning "Common Issues"
     
     **Configuration Issues:**
+
     - Verify JSON configuration syntax
     - Ensure model endpoint accessibility
     - Check parameter compatibility with VLLM version
     
     **Performance Issues:**
+
     - Monitor GPU memory utilization
     - Check for CPU bottlenecks during high concurrency
     - Validate network connectivity stability
     
     **Result Issues:**
+    
     - Ensure sufficient disk space for results
     - Verify write permissions to output directories
     - Check for incomplete benchmark runs in logs
