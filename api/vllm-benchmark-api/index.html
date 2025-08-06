@@ -1686,15 +1686,19 @@
 <h3 id="key-performance-indicators">Key Performance Indicators<a class="headerlink" href="#key-performance-indicators" title="Permanent link">&para;</a></h3>
 <div class="admonition tip">
 <p class="admonition-title">Understanding Metrics</p>
-<p><strong>Throughput Metrics:</strong>
-- <strong>Request Throughput</strong>: Completed requests per second
-- <strong>Output Token Throughput</strong>: Generated tokens per second
-- <strong>Total Token Throughput</strong>: Combined input/output tokens per second</p>
-<p><strong>Latency Metrics:</strong>
-- <strong>TTFT (Time to First Token)</strong>: Latency until first token generation
-- <strong>TPOT (Time per Output Token)</strong>: Average time between subsequent tokens
-- <strong>ITL (Inter-token Latency)</strong>: Real-time token generation intervals
-- <strong>E2EL (End-to-End Latency)</strong>: Complete request processing time</p>
+<p><strong>Throughput Metrics:</strong></p>
+<ul>
+<li><strong>Request Throughput</strong>: Completed requests per second</li>
+<li><strong>Output Token Throughput</strong>: Generated tokens per second</li>
+<li><strong>Total Token Throughput</strong>: Combined input/output tokens per second</li>
+</ul>
+<p><strong>Latency Metrics:</strong></p>
+<ul>
+<li><strong>TTFT (Time to First Token)</strong>: Latency until first token generation</li>
+<li><strong>TPOT (Time per Output Token)</strong>: Average time between subsequent tokens</li>
+<li><strong>ITL (Inter-token Latency)</strong>: Real-time token generation intervals</li>
+<li><strong>E2EL (End-to-End Latency)</strong>: Complete request processing time</li>
+</ul>
 </div>
 <h2 id="configuration-system">Configuration System<a class="headerlink" href="#configuration-system" title="Permanent link">&para;</a></h2>
 <p>VLLM benchmarks use a JSON-based configuration system located at <code>configs/vllm_benchmark.json</code>:</p>
@@ -1759,9 +1763,11 @@
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">VLLM_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">MODEL_NAME</span><span class="o">=</span><span class="s2">&quot;Qwen/Qwen2-0.5B&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">TOKENIZER</span><span class="o">=</span><span class="s2">&quot;gpt2&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">OUTPUT_DIR</span><span class="o">=</span><span class="s2">&quot;/workspace/results&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/benchmark_results:/workspace/results<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>vllm-benchmark:latest
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">OUTPUT_DIR</span><span class="o">=</span><span class="s2">&quot;/results&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">PARSED_DIR</span><span class="o">=</span><span class="s2">&quot;/parsed&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/results:/results<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/parsed:/parsed<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span>vllm-benchmark:latest
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Model Endpoint Validation</p>
@@ -1770,19 +1776,23 @@
 <h2 id="scenario-configuration">Scenario Configuration<a class="headerlink" href="#scenario-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="scenario-parameters">Scenario Parameters<a class="headerlink" href="#scenario-parameters" title="Permanent link">&para;</a></h3>
 <p>Each scenario in the configuration supports the following parameters:</p>
-<p><strong>Core Parameters:</strong>
-- <code>name</code>: Unique scenario identifier
-- <code>description</code>: Human-readable scenario description
-- <code>max_concurrency</code>: Maximum concurrent requests
-- <code>num_prompts</code>: Total number of prompts to process
-- <code>random_input_len</code>: Input token length for random dataset
-- <code>random_output_len</code>: Expected output token length</p>
-<p><strong>Advanced Parameters:</strong>
-- <code>backend</code>: Backend type (<code>openai-chat</code>, <code>openai</code>, <code>tgi</code>)
-- <code>endpoint_path</code>: API endpoint path (e.g., <code>/v1/chat/completions</code>)
-- <code>dataset_type</code>: Dataset type (<code>random</code>, <code>synthetic</code>)
-- <code>percentile_metrics</code>: Metrics to calculate percentiles for
-- <code>metric_percentiles</code>: Percentile values to compute</p>
+<p><strong>Core Parameters:</strong></p>
+<ul>
+<li><code>name</code>: Unique scenario identifier</li>
+<li><code>description</code>: Human-readable scenario description</li>
+<li><code>max_concurrency</code>: Maximum concurrent requests</li>
+<li><code>num_prompts</code>: Total number of prompts to process</li>
+<li><code>random_input_len</code>: Input token length for random dataset</li>
+<li><code>random_output_len</code>: Expected output token length</li>
+</ul>
+<p><strong>Advanced Parameters:</strong></p>
+<ul>
+<li><code>backend</code>: Backend type (<code>openai-chat</code>, <code>openai</code>, <code>tgi</code>)</li>
+<li><code>endpoint_path</code>: API endpoint path (e.g., <code>/v1/chat/completions</code>)</li>
+<li><code>dataset_type</code>: Dataset type (<code>random</code>, <code>synthetic</code>)</li>
+<li><code>percentile_metrics</code>: Metrics to calculate percentiles for</li>
+<li><code>metric_percentiles</code>: Percentile values to compute</li>
+</ul>
 <h3 id="multi-scenario-example">Multi-Scenario Example<a class="headerlink" href="#multi-scenario-example" title="Permanent link">&para;</a></h3>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;scenarios&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -1893,13 +1903,17 @@
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">VLLM_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">MODEL_NAME</span><span class="o">=</span><span class="s2">&quot;Qwen/Qwen2-0.5B&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">TOKENIZER</span><span class="o">=</span><span class="s2">&quot;gpt2&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">CONCURRENCY_LEVELS</span><span class="o">=</span><span class="s2">&quot;50,100&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">DURATION</span><span class="o">=</span><span class="s2">&quot;600&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span>vllm-benchmark:latest
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">OUTPUT_DIR</span><span class="o">=</span><span class="s2">&quot;/results&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">PARSED_DIR</span><span class="o">=</span><span class="s2">&quot;/parsed&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">CONCURRENCY_LEVELS</span><span class="o">=</span><span class="s2">&quot;50,100&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">DURATION</span><span class="o">=</span><span class="s2">&quot;600&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/results:/results<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/parsed:/parsed<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">  </span>vllm-benchmark:latest
 </span></code></pre></div>
 <h2 id="result-analysis-and-processing">Result Analysis and Processing<a class="headerlink" href="#result-analysis-and-processing" title="Permanent link">&para;</a></h2>
 <h3 id="automated-analysis">Automated Analysis<a class="headerlink" href="#automated-analysis" title="Permanent link">&para;</a></h3>
-<p>The benchmark system includes sophisticated analysis capabilities via <code>analyze_vllm_results.py</code>:</p>
+<p>The benchmark system includes sophisticated analysis capabilities via <code>eval/vllm-benchmark/analyze_vllm_results.py</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Analyze specific result file</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>python<span class="w"> </span>eval/vllm-benchmark/analyze_vllm_results.py<span class="w"> </span>/path/to/results.json
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
@@ -1937,18 +1951,24 @@
 <h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
 <div class="admonition warning">
 <p class="admonition-title">Troubleshooting Guide</p>
-<p><strong>Connection Issues:</strong>
-- Verify VLLM server is running and accessible
-- Check network connectivity with <code>curl</code> test
-- Ensure firewall rules allow benchmark traffic</p>
-<p><strong>Performance Issues:</strong>
-- Monitor GPU/CPU utilization during benchmarks
-- Check for resource contention with other processes
-- Verify model loading completed successfully</p>
-<p><strong>Result Inconsistencies:</strong>
-- Run multiple benchmark iterations for statistical stability
-- Account for system warm-up time in measurements
-- Monitor system load during benchmark execution</p>
+<p><strong>Connection Issues:</strong></p>
+<ul>
+<li>Verify VLLM server is running and accessible</li>
+<li>Check network connectivity with <code>curl</code> test</li>
+<li>Ensure firewall rules allow benchmark traffic</li>
+</ul>
+<p><strong>Performance Issues:</strong></p>
+<ul>
+<li>Monitor GPU/CPU utilization during benchmarks</li>
+<li>Check for resource contention with other processes</li>
+<li>Verify model loading completed successfully</li>
+</ul>
+<p><strong>Result Inconsistencies:</strong></p>
+<ul>
+<li>Run multiple benchmark iterations for statistical stability</li>
+<li>Account for system warm-up time in measurements</li>
+<li>Monitor system load during benchmark execution</li>
+</ul>
 </div>
 <h2 id="integration-with-vllm-eval-pipeline">Integration with VLLM Eval Pipeline<a class="headerlink" href="#integration-with-vllm-eval-pipeline" title="Permanent link">&para;</a></h2>
 <h3 id="pipeline-integration">Pipeline Integration<a class="headerlink" href="#pipeline-integration" title="Permanent link">&para;</a></h3>
@@ -1973,32 +1993,42 @@
 <h3 id="benchmark-configuration">Benchmark Configuration<a class="headerlink" href="#benchmark-configuration" title="Permanent link">&para;</a></h3>
 <div class="admonition tip">
 <p class="admonition-title">Optimization Tips</p>
-<p><strong>For Accurate Results:</strong>
-- Run multiple iterations for statistical stability
-- Allow adequate warm-up time before measurements
-- Monitor system resources during benchmarking
-- Use consistent hardware configurations</p>
-<p><strong>For Production Testing:</strong>
-- Configure scenarios matching production workloads
-- Test various concurrency levels progressively
-- Establish baseline performance thresholds
-- Automate benchmark execution in CI/CD pipelines</p>
+<p><strong>For Accurate Results:</strong></p>
+<ul>
+<li>Run multiple iterations for statistical stability</li>
+<li>Allow adequate warm-up time before measurements</li>
+<li>Monitor system resources during benchmarking</li>
+<li>Use consistent hardware configurations</li>
+</ul>
+<p><strong>For Production Testing:</strong></p>
+<ul>
+<li>Configure scenarios matching production workloads</li>
+<li>Test various concurrency levels progressively</li>
+<li>Establish baseline performance thresholds</li>
+<li>Automate benchmark execution in CI/CD pipelines</li>
+</ul>
 </div>
 <h3 id="troubleshooting_1">Troubleshooting<a class="headerlink" href="#troubleshooting_1" title="Permanent link">&para;</a></h3>
 <div class="admonition warning">
 <p class="admonition-title">Common Issues</p>
-<p><strong>Configuration Issues:</strong>
-- Verify JSON configuration syntax
-- Ensure model endpoint accessibility
-- Check parameter compatibility with VLLM version</p>
-<p><strong>Performance Issues:</strong>
-- Monitor GPU memory utilization
-- Check for CPU bottlenecks during high concurrency
-- Validate network connectivity stability</p>
-<p><strong>Result Issues:</strong>
-- Ensure sufficient disk space for results
-- Verify write permissions to output directories
-- Check for incomplete benchmark runs in logs</p>
+<p><strong>Configuration Issues:</strong></p>
+<ul>
+<li>Verify JSON configuration syntax</li>
+<li>Ensure model endpoint accessibility</li>
+<li>Check parameter compatibility with VLLM version</li>
+</ul>
+<p><strong>Performance Issues:</strong></p>
+<ul>
+<li>Monitor GPU memory utilization</li>
+<li>Check for CPU bottlenecks during high concurrency</li>
+<li>Validate network connectivity stability</li>
+</ul>
+<p><strong>Result Issues:</strong></p>
+<ul>
+<li>Ensure sufficient disk space for results</li>
+<li>Verify write permissions to output directories</li>
+<li>Check for incomplete benchmark runs in logs</li>
+</ul>
 </div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <div class="admonition success">
