@@ -3,7 +3,7 @@ set -euo pipefail
 
 # 환경 변수 기본값 설정
 DEFAULT_ENDPOINT="http://localhost:8000"
-CONFIG_PATH="${CONFIG_PATH:-configs/vllm_benchmark.json}"
+CONFIG_PATH="${CONFIG_PATH:-configs/eval_config.json}"
 VLLM_ENDPOINT="${VLLM_ENDPOINT:-$DEFAULT_ENDPOINT}"
 OUTPUT_DIR="${OUTPUT_DIR:-/app/results}"
 PARSED_DIR="$(dirname "$OUTPUT_DIR")/app/parsed"

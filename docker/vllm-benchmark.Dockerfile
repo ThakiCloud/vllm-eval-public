@@ -44,7 +44,7 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/benchmarks /app/benchmarks
 
-COPY configs/vllm_benchmark.json /app/configs/vllm_benchmark.json
+COPY configs/vllm_benchmark.json /app/configs/eval_config.json
 COPY eval/vllm-benchmark/ /app/scripts/
 COPY scripts/standardize_vllm_benchmark.py /app/scripts/standardize_vllm_benchmark.py
 
