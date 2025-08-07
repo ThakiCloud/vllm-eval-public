@@ -1661,7 +1661,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--network<span class="w"> </span>host<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/results:/app/evalchemy-src/results<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">VLLM_MODEL_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/v1/completions&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">MODEL_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/v1/completions&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">MODEL_NAME</span><span class="o">=</span><span class="s2">&quot;Qwen/Qwen2-0.5B&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">TOKENIZER</span><span class="o">=</span><span class="s2">&quot;Qwen/Qwen2-0.5B&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span>standard-evalchemy:latest
@@ -1673,7 +1673,7 @@
 <h3 id="environment-variables-explained">Environment Variables Explained<a class="headerlink" href="#environment-variables-explained" title="Permanent link">&para;</a></h3>
 <p><strong>Model Configuration:</strong></p>
 <ul>
-<li><code>VLLM_MODEL_ENDPOINT</code>: Complete API endpoint URL including path</li>
+<li><code>MODEL_ENDPOINT</code>: Complete API endpoint URL including path</li>
 <li><code>MODEL_NAME</code>: HuggingFace model identifier</li>
 <li><code>SERVED_MODEL_NAME</code>: Model name as configured in VLLM server</li>
 <li><code>TOKENIZER</code>: Tokenizer specification for accurate token counting</li>
@@ -1776,7 +1776,7 @@
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span>--gpus<span class="w"> </span>all<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span>--network<span class="w"> </span>host<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="s2">&quot;0,1,2,3&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">VLLM_MODEL_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/v1/completions&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">MODEL_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/v1/completions&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="c1"># ... other environment variables</span>
 </span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span>standard-evalchemy:latest
 </span></code></pre></div>
