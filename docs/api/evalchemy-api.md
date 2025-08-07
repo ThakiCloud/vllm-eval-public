@@ -68,7 +68,7 @@ Run comprehensive benchmarks in a containerized environment:
 docker run --rm \
     --network host \
     -v $(pwd)/results:/app/evalchemy-src/results \
-    -e VLLM_MODEL_ENDPOINT="http://localhost:8080/v1/completions" \
+    -e MODEL_ENDPOINT="http://localhost:8080/v1/completions" \
     -e MODEL_NAME="Qwen/Qwen2-0.5B" \
     -e TOKENIZER="Qwen/Qwen2-0.5B" \
     standard-evalchemy:latest
@@ -82,7 +82,7 @@ docker run --rm \
 
 **Model Configuration:**
 
-- `VLLM_MODEL_ENDPOINT`: Complete API endpoint URL including path
+- `MODEL_ENDPOINT`: Complete API endpoint URL including path
 - `MODEL_NAME`: HuggingFace model identifier
 - `SERVED_MODEL_NAME`: Model name as configured in VLLM server
 - `TOKENIZER`: Tokenizer specification for accurate token counting
@@ -211,7 +211,7 @@ docker run --rm \
     --gpus all \
     --network host \
     -e CUDA_VISIBLE_DEVICES="0,1,2,3" \
-    -e VLLM_MODEL_ENDPOINT="http://localhost:8080/v1/completions" \
+    -e MODEL_ENDPOINT="http://localhost:8080/v1/completions" \
     # ... other environment variables
     standard-evalchemy:latest
 ```

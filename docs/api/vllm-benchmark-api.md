@@ -89,7 +89,7 @@ cd eval/vllm-benchmark
 
 ### Environment Variables
 
-- `VLLM_ENDPOINT`: VLLM server base URL (default: `http://localhost:8000`)
+- `MODEL_ENDPOINT`: VLLM server base URL (default: `http://localhost:8000`)
 - `CONFIG_PATH`: Configuration file path (default: `configs/vllm_benchmark.json`)
 - `OUTPUT_DIR`: Results output directory (default: `/app/results`)
 - `REQUEST_RATE`: Request rate for load testing (default: `1.0`)
@@ -100,7 +100,7 @@ cd eval/vllm-benchmark
 ### Advanced Configuration
 
 ```bash
-VLLM_ENDPOINT="http://localhost:8080" \
+MODEL_ENDPOINT="http://localhost:8080" \
 CONFIG_PATH="configs/custom_benchmark.json" \
 OUTPUT_DIR="./benchmark_results" \
 MODEL_NAME="Qwen/Qwen2-0.5B" \
@@ -120,7 +120,7 @@ docker build -f docker/vllm-benchmark.Dockerfile -t vllm-benchmark:latest .
 ```bash
 docker run --rm \
   --network host \
-  -e VLLM_ENDPOINT="http://localhost:8080" \
+  -e MODEL_ENDPOINT="http://localhost:8080" \
   -e MODEL_NAME="Qwen/Qwen2-0.5B" \
   -e TOKENIZER="gpt2" \
   -e OUTPUT_DIR="/results" \
@@ -277,7 +277,7 @@ The basic benchmark runs single-client scenarios to establish baseline performan
 # High-concurrency stress test
 docker run --rm \
   --network host \
-  -e VLLM_ENDPOINT="http://localhost:8080" \
+  -e MODEL_ENDPOINT="http://localhost:8080" \
   -e MODEL_NAME="Qwen/Qwen2-0.5B" \
   -e TOKENIZER="gpt2" \
   -e OUTPUT_DIR="/results" \
