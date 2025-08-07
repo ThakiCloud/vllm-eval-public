@@ -1,11 +1,16 @@
-# Stage 1: 빌드 스테이지
+# VLLM Evaluation Container - VLLM Benchmark Framework
+# Standardized version with consistent parameters and structure
+
+# Stage 1: Build stage
 FROM python:3.11-slim AS builder
 
+# Standardized environment variables for build
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     VLLM_TARGET_DEVICE=cpu
 
+# Build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential cmake ninja-build git curl libnuma-dev \
@@ -14,11 +19,14 @@ RUN apt-get update && \
     --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
     rm -rf /var/lib/apt/lists/*
 
+# Create virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN pip install --upgrade pip setuptools wheel packaging cmake ninja setuptools-scm>=8 numpy pandas
+# Install Python dependencies
+RUN pip install --upgrade pip setuptools wheel packaging cmake ninja setuptools-scm>=8 numpy pandas datasets
 
+# Clone and build VLLM
 RUN git clone https://github.com/vllm-project/vllm.git /tmp/vllm
 WORKDIR /tmp/vllm
 
@@ -26,30 +34,48 @@ RUN pip install -v -r requirements/cpu.txt \
     --extra-index-url https://download.pytorch.org/whl/cpu && \
     VLLM_TARGET_DEVICE=cpu python setup.py install
 
-#RUN pip install vllm[cpu] --extra-index-url https://download.pytorch.org/whl/cpu
+# Use below for linux/amd
+# RUN pip install vllm[cpu] --extra-index-url https://download.pytorch.org/whl/cpu
 
-# 전체 benchmarks 디렉토리 복사 (모든 의존성 포함)
+# Copy benchmarks directory
 RUN mkdir -p /app && \
     cp -r /tmp/vllm/benchmarks /app/benchmarks
 
-# Stage 2: 런타임 스테이지
+# Stage 2: Runtime stage
 FROM python:3.11-slim
 
+# Standardized metadata
+LABEL maintainer="Thaki Cloud MLOps Team"
+LABEL framework="vllm-benchmark"
+LABEL version="1.1.0"
+LABEL description="VLLM performance benchmarking container with serving benchmarks"
+LABEL gpu.required="false"
+
+# Standardized environment variables
 ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
     PATH="/opt/venv/bin:$PATH"
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl jq && \
-    rm -rf /var/lib/apt/lists/*
+# System packages installation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
 
+# Standardized working directory
 WORKDIR /app
 
+# Copy from build stage
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/benchmarks /app/benchmarks
 
+# Framework-specific files
 COPY configs/vllm_benchmark.json /app/configs/eval_config.json
 COPY eval/vllm-benchmark/ /app/scripts/
 COPY scripts/standardize_vllm_benchmark.py /app/scripts/standardize_vllm_benchmark.py
 
+# Copy framework scripts and setup directories (exactly matching working version)
 RUN cp /app/scripts/*.sh /app/ && \
     cp /app/scripts/*.py /app/ && \
     chmod +x /app/*.sh /app/*.py && \
@@ -60,17 +86,21 @@ RUN cp /app/scripts/*.sh /app/ && \
 RUN mkdir -p /app/results && chmod 777 /app/results
 RUN mkdir -p /app/parsed && chmod 777 /app/parsed
 
+# Create non-root user (matching working version)
 RUN useradd --create-home --shell /bin/bash benchuser && \
     chown -R benchuser:benchuser /app /opt/venv
 
 USER benchuser
 
-ENV MODEL_ENDPOINT="http://localhost:8000" \
+# Standardized environment variables
+ENV EVAL_FRAMEWORK="vllm-benchmark" \
+    EVAL_CONFIG_PATH="/app/configs/eval_config.json" \
+    MODEL_ENDPOINT="http://localhost:8000" \
     ENDPOINT_PATH="/v1/chat/completions" \
-    #    MODEL_NAME="Qwen/Qwen3-8B" \
-    #    SERVED_MODEL_NAME="qwen3-8b" \
     OUTPUT_DIR="/app/results" \
     PARSED_DIR="/app/parsed" \
+    LOG_LEVEL="INFO" \
+    BATCH_SIZE="1" \
     NUM_PROMPTS="100" \
     REQUEST_RATE="1.0" \
     MAX_CONCURRENCY="1" \
@@ -78,14 +108,28 @@ ENV MODEL_ENDPOINT="http://localhost:8000" \
     RANDOM_OUTPUT_LEN="128" \
     BACKEND="vllm" \
     DATASET_TYPE="random" \
-    #    PERCENTILE_METRICS="ttft,tpot,itl,e2el" \
-    #    METRIC_PERCENTILES="25,50,75,90,95,99" \
-    LOG_LEVEL="INFO" \
-    BACKEND_API="http://model-benchmark-backend-svc:8000"
+    BACKEND_API="http://model-benchmark-backend-svc:8000" \
+    PYTHONPATH="/app"
 
-VOLUME ["/app/results", "/app/parsed"]
+# Standardized volumes
+VOLUME ["/app/results", "/app/parsed", "/app/cache"]
 
+# Standardized healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD /app/healthcheck.sh
 
+# Standardized entrypoint
 ENTRYPOINT ["/app/run_vllm_benchmark.sh"]
+CMD []
+
+# Standardized usage documentation
+# docker build -f docker/vllm-benchmark.standardized.Dockerfile -t vllm-eval/vllm-benchmark:latest .
+#
+# docker run --rm \
+#   -v $(pwd)/results:/app/results \
+#   -v $(pwd)/parsed:/app/parsed \
+#   -e MODEL_ENDPOINT="http://host.docker.internal:8000" \
+#   -e MODEL_NAME="qwen3-8b" \
+#   -e NUM_PROMPTS="100" \
+#   -e REQUEST_RATE="2.0" \
+#   vllm-eval/vllm-benchmark:latest

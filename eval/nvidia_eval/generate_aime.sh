@@ -4,7 +4,7 @@ CHECKPOINT_DIR=$1
 TOKENIZER_DIR=$1
 seed=$2
 DATA_NAME=$3
-OUTPUT_FOLDER_NAME=$4
+OUTPUT_DIR=$4
 MODEL_TYPE=$5
 GPUS=$6
 OUT_SEQ_LEN=$7
@@ -31,7 +31,7 @@ for (( gpu=0; gpu<GPUS; gpu++ )); do
     --seed "${seed}" \
     --bf16 \
     --model-type "${MODEL_TYPE}" \
-    --output-folder "${OUTPUT_FOLDER_NAME}" \
+    --output-folder "${OUTPUT_DIR}" \
     --datapath "${DATA}" \
     --device-id "${gpu}" &
 

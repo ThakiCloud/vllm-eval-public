@@ -4,7 +4,7 @@ set -euo pipefail
 # 환경 변수 기본값 설정
 DEFAULT_ENDPOINT="http://localhost:8000"
 CONFIG_PATH="${CONFIG_PATH:-configs/eval_config.json}"
-VLLM_ENDPOINT="${VLLM_ENDPOINT:-$DEFAULT_ENDPOINT}"
+MODEL_ENDPOINT="${MODEL_ENDPOINT:-$DEFAULT_ENDPOINT}"
 OUTPUT_DIR="${OUTPUT_DIR:-/app/results}"
 PARSED_DIR="$(dirname "$OUTPUT_DIR")/app/parsed"
 REQUEST_RATE="${REQUEST_RATE:-1.0}"
@@ -22,7 +22,7 @@ UTC_TIME=$(date '+%Y-%m-%d %H:%M:%S UTC')
 MAIN_LOG_FILE="$OUTPUT_DIR/vllm_benchmark_main_${TIMESTAMP}.log"
 
 echo "🚀 VLLM 멀티 시나리오 벤치마크 시작 - $UTC_TIME" | tee "$MAIN_LOG_FILE"
-echo "📡 서버: $VLLM_ENDPOINT" | tee -a "$MAIN_LOG_FILE"
+echo "📡 서버: $MODEL_ENDPOINT" | tee -a "$MAIN_LOG_FILE"
 echo "📁 설정 파일: $CONFIG_PATH" | tee -a "$MAIN_LOG_FILE"
 echo "💾 결과 디렉토리: $OUTPUT_DIR" | tee -a "$MAIN_LOG_FILE"
 echo "===============================================" | tee -a "$MAIN_LOG_FILE"
@@ -117,7 +117,7 @@ print(json.dumps(merged))
     echo "🔧 백엔드: $BACKEND" | tee -a "$MAIN_LOG_FILE"
     echo "💾 결과 디렉토리: $SCENARIO_RESULT_DIR" | tee -a "$MAIN_LOG_FILE"
     
-    check_model_endpoint "$VLLM_ENDPOINT" || exit 1
+    check_model_endpoint "$MODEL_ENDPOINT" || exit 1
     # 결과 디렉토리 생성
     mkdir -p "$SCENARIO_RESULT_DIR"
     
@@ -125,7 +125,7 @@ print(json.dumps(merged))
     echo "⚡ 벤치마크 실행 시작..." | tee -a "$MAIN_LOG_FILE"
     cd /app/benchmarks && python benchmark_serving.py \
         --backend "$BACKEND" \
-        --base-url "$VLLM_ENDPOINT" \
+        --base-url "$MODEL_ENDPOINT" \
         --endpoint "$ENDPOINT_PATH" \
         --model "$MODEL_NAME" \
         --served-model-name "$SERVED_MODEL_NAME" \

@@ -3,7 +3,7 @@
 FROM python:3.11-slim
 
 # 메타데이터
-LABEL maintainer="VLLM Eval Team"
+LABEL maintainer="Thaki Cloud MLOps Team"
 LABEL description="VLLM evalchemy evaluation container with ThakiCloud/evalchemy fork"
 LABEL version="2.1.0"
 
@@ -105,7 +105,7 @@ USER evaluser
 
 # 기본 환경 변수 설정
 ENV EVAL_CONFIG_PATH="/app/configs/eval_config.json" \
-    VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
+    MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
     OUTPUT_DIR="/app/evalchemy-src/results" \
     MAX_TOKENS="14000" \
     LIMIT="1" \
@@ -130,7 +130,7 @@ ENTRYPOINT ["/app/eval/standard_evalchemy/run_evalchemy.sh"]
 # Example docker run command:
 # docker run --rm \
 #   -v $(pwd)/results:/app/evalchemy-src/results \
-#   -e VLLM_MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
+#   -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
 #   -e LOG_LEVEL="DEBUG" \
 #   evalchemy-runner
 #
@@ -142,14 +142,14 @@ ENTRYPOINT ["/app/eval/standard_evalchemy/run_evalchemy.sh"]
 # 2. 기본 실행 (결과를 호스트에 마운트):
 # docker run --rm \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
-#   -e VLLM_MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
+#   -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
 #   -e LOG_LEVEL="DEBUG" \
 #   vllm-eval/evalchemy:latest
 #
 # 7. 커스텀 모델로 실행:
 # docker run --rm \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
-#   -e VLLM_MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
+#   -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
 #   -e MODEL_NAME="llama3-8b" \
 #   -e TOKENIZER="meta-llama/Llama-3-8B" \
 #   -e TOKENIZER_BACKEND="huggingface" \
@@ -159,7 +159,7 @@ ENTRYPOINT ["/app/eval/standard_evalchemy/run_evalchemy.sh"]
 # docker run --rm \
 #   --network host \
 #   -v $(pwd)/results:/app/eval/standard_evalchemy/results \
-#   -e VLLM_MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
+#   -e MODEL_ENDPOINT="http://vllm:8000/v1/completions" \
 #   vllm-eval/evalchemy:latest
 #
 # 4. 디버깅 모드 (인터랙티브):

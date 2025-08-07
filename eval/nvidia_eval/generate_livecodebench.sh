@@ -6,7 +6,7 @@ CHECKPOINT_DIR=$1
 TOKENIZER_DIR=$1
 seed=$2
 DATA="data/livecodebench_problems.jsonl"
-OUTPUT_FOLDER_NAME=$3
+OUTPUT_DIR=$3
 MODEL_TYPE=$4
 
 #######################################
@@ -41,7 +41,7 @@ for (( gpu=0; gpu<GPUS; gpu++ )); do
     --start-idx "${start}" \
     --end-idx "${end}" \
     --model-type "${MODEL_TYPE}" \
-    --output-folder "${DIR}/${OUTPUT_FOLDER_NAME}" \
+    --output-folder "${DIR}/${OUTPUT_DIR}" \
     --datapath "${DATA}" \
     --device-id "${gpu}" &
 done

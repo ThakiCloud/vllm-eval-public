@@ -95,8 +95,8 @@ RUN if [ -f /workspace/tools/latex2sympy/antlr-4.11.1-complete.jar ]; then \
     fi
 
 # 스크립트들에 API 모드 파라미터 및 GPU 제거
-RUN sed -i '/python inference.py/a\    ${API_BASE:+--api-base "${API_BASE}"} \\' generate_aime.sh && \
-    sed -i '/python inference.py/a\    ${API_BASE:+--api-base "${API_BASE}"} \\' generate_livecodebench.sh && \
+RUN sed -i '/python inference.py/a\    ${MODEL_ENDPOINT:+--api-base "${MODEL_ENDPOINT}"} \\' generate_aime.sh && \
+    sed -i '/python inference.py/a\    ${MODEL_ENDPOINT:+--api-base "${MODEL_ENDPOINT}"} \\' generate_livecodebench.sh && \
     sed -i 's/for (( gpu=0; gpu<GPUS; gpu++ )); do/# API mode - single execution/' generate_aime.sh && \
     sed -i 's/for (( gpu=0; gpu<GPUS; gpu++ )); do/# API mode - single execution/' generate_livecodebench.sh && \
     sed -i 's/--device-id "${gpu}" &/# --device-id removed for API mode/' generate_aime.sh && \
@@ -108,9 +108,9 @@ RUN sed -i '/python inference.py/a\    ${API_BASE:+--api-base "${API_BASE}"} \\'
     sed -i 's/wait/# wait/' generate_aime.sh && \
     sed -i 's/wait/# wait/' generate_livecodebench.sh
 
-# OUT_SEQ_LEN 기본값 설정
-RUN sed -i 's/--max-output-len "${OUT_SEQ_LEN}"/--max-output-len "${OUT_SEQ_LEN:-32768}"/' generate_aime.sh && \
-    sed -i 's/--max-output-len "${OUT_SEQ_LEN}"/--max-output-len "${OUT_SEQ_LEN:-14000}"/' generate_livecodebench.sh
+# MAX_TOKENS 기본값 설정
+RUN sed -i 's/--max-output-len "${MAX_TOKENS}"/--max-output-len "${MAX_TOKENS:-32768}"/' generate_aime.sh && \
+    sed -i 's/--max-output-len "${MAX_TOKENS}"/--max-output-len "${MAX_TOKENS:-14000}"/' generate_livecodebench.sh
 
 # 실행 권한 부여
 RUN chmod +x /workspace/*.sh
@@ -123,15 +123,15 @@ CMD echo "=== Starting AceReason Evaluation Toolkit ===" && \
     test-network && \
     echo "" && \
     if [ "$EVAL_TYPE" = "aime" ]; then \
-        bash run_aime.sh "$MODEL_NAME" "$OUTPUT_FOLDER" 1 "${OUT_SEQ_LEN:-32768}"; \
+        bash run_aime.sh "$MODEL_NAME" "$OUTPUT_DIR" 1 "${MAX_TOKENS:-32768}"; \
     elif [ "$EVAL_TYPE" = "lcb" ]; then \
-        bash run_livecodebench.sh "$MODEL_NAME" "$OUTPUT_FOLDER" 1 "${OUT_SEQ_LEN:-14000}"; \
+        bash run_livecodebench.sh "$MODEL_NAME" "$OUTPUT_DIR" 1 "${MAX_TOKENS:-14000}"; \
     elif [ "$EVAL_TYPE" = "both" ]; then \
-        bash run_aime.sh "$MODEL_NAME" "$OUTPUT_FOLDER" 1 "${OUT_SEQ_LEN:-32768}" && \
-        bash run_livecodebench.sh "$MODEL_NAME" "$OUTPUT_FOLDER" 1 "${OUT_SEQ_LEN:-14000}"; \
+        bash run_aime.sh "$MODEL_NAME" "$OUTPUT_DIR" 1 "${MAX_TOKENS:-32768}" && \
+        bash run_livecodebench.sh "$MODEL_NAME" "$OUTPUT_DIR" 1 "${MAX_TOKENS:-14000}"; \
     else \
-        echo "Usage: docker run -e API_BASE=http://server:8000/v1 -e MODEL_NAME=model -e OUTPUT_FOLDER=output -e EVAL_TYPE=[aime|lcb|both] image"; \
-        echo "Optional: -e OUT_SEQ_LEN=32768"; \
+        echo "Usage: docker run -e MODEL_ENDPOINT=http://server:8000/v1 -e MODEL_NAME=model -e OUTPUT_DIR=output -e EVAL_TYPE=[aime|lcb|both] image"; \
+        echo "Optional: -e MAX_TOKENS=32768"; \
     fi
 
 # 라벨
@@ -142,29 +142,29 @@ LABEL gpu.required="false"
 # docker build -f . docker/nvidia_eval.Dockerfile  -t nvidia-eval-standard --no-cache
 #
 # 실행 예시 [AIME, LCB 모두 평가]
-#   docker run -e API_BASE=http://host.docker.internal:port/v1 \
+#   docker run -e MODEL_ENDPOINT=http://host.docker.internal:port/v1 \
 #   -e MODEL_NAME=qwen3-8b \
-#   -e OUTPUT_FOLDER=output \
+#   -e OUTPUT_DIR=output \
 #   -e EVAL_TYPE=both \
-#   -e OUT_SEQ_LEN=14000 \
+#   -e MAX_TOKENS=14000 \
 #   -v $(pwd)/output:/workspace/output \
 #   nvidia-eval-nvidia-eval-standard  
 #
 # 실행 예시 [AIME 평가]
-#   docker run -e API_BASE=http://host.docker.internal:port/v1 \
+#   docker run -e MODEL_ENDPOINT=http://host.docker.internal:port/v1 \
 #   -e MODEL_NAME=qwen3-8b \
-#   -e OUTPUT_FOLDER=output \
+#   -e OUTPUT_DIR=output \
 #   -e EVAL_TYPE=aime \
-#   -e OUT_SEQ_LEN=14000 \
+#   -e MAX_TOKENS=14000 \
 #   -v $(pwd)/output:/workspace/output \
 #   nvidia-eval-nvidia-eval-standard  
 #
 # 실행 예시 [LCB 평가]
-#   docker run -e API_BASE=http://host.docker.internal:port/v1 \
+#   docker run -e MODEL_ENDPOINT=http://host.docker.internal:port/v1 \
 #   -e MODEL_NAME=qwen3-8b \
-#   -e OUTPUT_FOLDER=output \
+#   -e OUTPUT_DIR=output \
 #   -e EVAL_TYPE=lcb \
-#   -e OUT_SEQ_LEN=14000 \
+#   -e MAX_TOKENS=14000 \
 #   -v $(pwd)/output:/workspace/output \
 #   nvidia-eval-nvidia-eval-standard  
 #

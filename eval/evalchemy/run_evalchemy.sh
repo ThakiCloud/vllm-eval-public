@@ -10,7 +10,7 @@
 #   ./run_evalchemy.sh [OPTIONS]
 #
 # Environment Variables:
-#   VLLM_MODEL_ENDPOINT  - API endpoint for VLLM model (required)
+#   MODEL_ENDPOINT  - API endpoint for VLLM model (required)
 #   EVAL_CONFIG_PATH     - Path to evaluation config JSON (default: configs/eval_config.json)
 #   OUTPUT_DIR          - Directory for results output (default: ./results)
 #   RUN_ID              - Unique identifier for this evaluation run
@@ -54,7 +54,7 @@ DEFAULT_LOG_LEVEL="INFO"
 DEFAULT_TOKENIZER_BACKEND="none"
 
 # Environment variables with defaults
-VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
+MODEL_ENDPOINT="${MODEL_ENDPOINT:-}"
 EVAL_CONFIG_PATH="${EVAL_CONFIG_PATH:-$DEFAULT_CONFIG_PATH}"
 OUTPUT_DIR="${OUTPUT_DIR:-$DEFAULT_OUTPUT_DIR}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
@@ -137,7 +137,7 @@ OPTIONS:
     -v, --version           Show version information
 
 ENVIRONMENT VARIABLES:
-    VLLM_MODEL_ENDPOINT     Model API endpoint
+    MODEL_ENDPOINT     Model API endpoint
     EVAL_CONFIG_PATH        Configuration file path
     OUTPUT_DIR              Results output directory
     RUN_ID                  Evaluation run identifier
@@ -553,7 +553,7 @@ aggregate_results() {
     local summary_data="{}"
     summary_data=$(echo "$summary_data" | jq ". + {\"run_id\": \"$RUN_ID\"}")
     summary_data=$(echo "$summary_data" | jq ". + {\"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}")
-    summary_data=$(echo "$summary_data" | jq ". + {\"model_endpoint\": \"$VLLM_MODEL_ENDPOINT\"}")
+    summary_data=$(echo "$summary_data" | jq ". + {\"model_endpoint\": \"$MODEL_ENDPOINT\"}")
     summary_data=$(echo "$summary_data" | jq ". + {\"config_path\": \"$EVAL_CONFIG_PATH\"}")
     
     local results_data="{}"
@@ -708,7 +708,7 @@ main() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             -e|--endpoint)
-                VLLM_MODEL_ENDPOINT="$2"
+                MODEL_ENDPOINT="$2"
                 shift 2
                 ;;
             -c|--config)
@@ -824,9 +824,9 @@ main() {
     log INFO "Output directory: $RESULTS_DIR"
     
     # Validation
-    if [[ -z "$VLLM_MODEL_ENDPOINT" ]]; then
+    if [[ -z "$MODEL_ENDPOINT" ]]; then
         log ERROR "VLLM model endpoint is required"
-        log ERROR "Use --endpoint or set VLLM_MODEL_ENDPOINT environment variable"
+        log ERROR "Use --endpoint or set MODEL_ENDPOINT environment variable"
         exit 1
     fi
     
@@ -838,8 +838,8 @@ main() {
     check_dependencies || exit 1
     validate_config "$EVAL_CONFIG_PATH" || exit 1
     check_gpu_availability || exit 1
-    test_model_endpoint "$VLLM_MODEL_ENDPOINT" || exit 1
-    check_model_endpoint "$VLLM_MODEL_ENDPOINT" || exit 1
+    test_model_endpoint "$MODEL_ENDPOINT" || exit 1
+    check_model_endpoint "$MODEL_ENDPOINT" || exit 1
     check_custom_tasks || log WARN "Custom tasks not available - some benchmarks may fail"
     
     # Environment setup
@@ -869,7 +869,7 @@ main() {
     local evaluation_start_time=$(date +%s)
     
     for benchmark in "${benchmark_array[@]}"; do
-        if ! run_benchmark "$benchmark" "$EVAL_CONFIG_PATH" "$VLLM_MODEL_ENDPOINT"; then
+        if ! run_benchmark "$benchmark" "$EVAL_CONFIG_PATH" "$MODEL_ENDPOINT"; then
             failed_benchmarks+=("$benchmark")
             log ERROR "Benchmark $benchmark failed"
         fi

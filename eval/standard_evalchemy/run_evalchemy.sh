@@ -11,7 +11,7 @@
 #   ./run_evalchemy.sh [OPTIONS]
 #
 # Environment Variables:
-#   VLLM_MODEL_ENDPOINT  - API endpoint for VLLM model (required)
+#   MODEL_ENDPOINT  - API endpoint for VLLM model (required)
 #   EVAL_CONFIG_PATH     - Path to evaluation config JSON (default: configs/eval_config.json)
 #   OUTPUT_DIR          - Directory for results output (default: ./logs)
 #   RUN_ID              - Unique identifier for this evaluation run
@@ -53,7 +53,7 @@ DEFAULT_LOG_LEVEL="INFO"
 DEFAULT_TOKENIZER_BACKEND="none"
 
 # Environment variables with defaults
-VLLM_MODEL_ENDPOINT="${VLLM_MODEL_ENDPOINT:-}"
+MODEL_ENDPOINT="${MODEL_ENDPOINT:-}"
 EVAL_CONFIG_PATH="${EVAL_CONFIG_PATH:-$DEFAULT_CONFIG_PATH}"
 OUTPUT_DIR="${OUTPUT_DIR:-$DEFAULT_OUTPUT_DIR}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
@@ -223,7 +223,7 @@ OPTIONS:
     -v, --version           Show version information
 
 ENVIRONMENT VARIABLES:
-    VLLM_MODEL_ENDPOINT     Model API endpoint
+    MODEL_ENDPOINT     Model API endpoint
     EVAL_CONFIG_PATH        Configuration file path
     OUTPUT_DIR              Results output directory
     RUN_ID                  Evaluation run identifier
@@ -252,7 +252,7 @@ EXAMPLES:
     $SCRIPT_NAME --list-tasks
 
     # Using environment variables
-    export VLLM_MODEL_ENDPOINT="http://localhost:8000/v1"
+    export MODEL_ENDPOINT="http://localhost:8000/v1"
     export MODEL_NAME="claude-3-sonnet"
     $SCRIPT_NAME
 
@@ -674,7 +674,7 @@ main() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             -e|--endpoint)
-                VLLM_MODEL_ENDPOINT="$2"
+                MODEL_ENDPOINT="$2"
                 shift 2
                 ;;
             -t|--tasks)
@@ -790,20 +790,20 @@ main() {
     fi
     
     # Validation
-    if [[ -z "$VLLM_MODEL_ENDPOINT" ]]; then
+    if [[ -z "$MODEL_ENDPOINT" ]]; then
         log ERROR "VLLM model endpoint is required"
-        log ERROR "Use --endpoint or set VLLM_MODEL_ENDPOINT environment variable"
+        log ERROR "Use --endpoint or set MODEL_ENDPOINT environment variable"
         exit 1
     fi
     
     # Skip endpoint test in dry-run mode
     if [[ "${DRY_RUN:-false}" != "true" ]]; then
-        test_model_endpoint "$VLLM_MODEL_ENDPOINT" || exit 1
+        test_model_endpoint "$MODEL_ENDPOINT" || exit 1
     else
         log INFO "Skipping endpoint test in dry-run mode"
     fi
 
-    check_model_endpoint "$VLLM_MODEL_ENDPOINT" || exit 1
+    check_model_endpoint "$MODEL_ENDPOINT" || exit 1
 
     # Environment setup
     prepare_environment
@@ -811,7 +811,7 @@ main() {
     # Run evaluation
     local evaluation_start_time=$(date +%s)
     
-    if ! run_evalchemy_evaluation "$tasks" "$VLLM_MODEL_ENDPOINT"; then
+    if ! run_evalchemy_evaluation "$tasks" "$MODEL_ENDPOINT"; then
         standardize_results "$RESULTS_DIR" "Standard Evalchemy" "${tasks}"
         
         log ERROR "Evaluation failed"

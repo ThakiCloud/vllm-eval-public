@@ -7,12 +7,12 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 CONFIG_FILE="${PROJECT_ROOT}/configs/vllm_benchmark.json"
 
 # 기본 설정
-VLLM_ENDPOINT="${VLLM_ENDPOINT:-http://localhost:8000}"
+MODEL_ENDPOINT="${MODEL_ENDPOINT:-http://localhost:8000}"
 RESULTS_DIR="${PROJECT_ROOT}/results/performance"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 echo "🚀 VLLM 성능 벤치마크 시작"
-echo "📡 엔드포인트: $VLLM_ENDPOINT"
+echo "📡 엔드포인트: $MODEL_ENDPOINT"
 echo "📁 결과 디렉토리: $RESULTS_DIR"
 
 # 결과 디렉토리 생성
@@ -56,7 +56,7 @@ for i in $(seq 0 $((scenario_count - 1))); do
     # Docker로 벤치마크 실행
     docker run --rm \
         -v "$scenario_dir:/results" \
-        -e VLLM_ENDPOINT="$VLLM_ENDPOINT" \
+        -e MODEL_ENDPOINT="$MODEL_ENDPOINT" \
         -e MODEL_NAME="$model" \
         -e SERVED_MODEL_NAME="$served_model_name" \
         -e MAX_CONCURRENCY="$max_concurrency" \
