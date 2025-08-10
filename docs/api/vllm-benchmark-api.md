@@ -123,10 +123,10 @@ docker run --rm \
   -e MODEL_ENDPOINT="http://localhost:8080" \
   -e MODEL_NAME="Qwen/Qwen2-0.5B" \
   -e TOKENIZER="gpt2" \
-  -e OUTPUT_DIR="/results" \
-  -e PARSED_DIR="/parsed" \
-  -v $(pwd)/results:/results \
-  -v $(pwd)/parsed:/parsed \
+  -e OUTPUT_DIR="/app/results" \
+  -e PARSED_DIR="/app/parsed" \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
   vllm-benchmark:latest
 ```
 

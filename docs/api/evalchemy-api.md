@@ -52,7 +52,7 @@ Evalchemy supports two primary execution approaches, each optimized for differen
 Create the Evalchemy Docker image:
 
 ```bash
-docker build -f docker/standard_evalchemy.Dockerfile \
+docker build -f docker/standard-evalchemy.Dockerfile \
     -t standard-evalchemy:latest .
 ```
 
@@ -67,7 +67,8 @@ Run comprehensive benchmarks in a containerized environment:
 ```bash
 docker run --rm \
     --network host \
-    -v $(pwd)/results:/app/evalchemy-src/results \
+    -v $(pwd)/results:/app/results \
+    -v $(pwd)/parsed:/app/parsed \
     -e MODEL_ENDPOINT="http://localhost:8080/v1/completions" \
     -e MODEL_NAME="Qwen/Qwen2-0.5B" \
     -e TOKENIZER="Qwen/Qwen2-0.5B" \
@@ -287,7 +288,7 @@ Evalchemy integrates seamlessly with the broader VLLM evaluation ecosystem:
 # Integration with aggregation pipeline
 python scripts/aggregate_metrics.py \
     --include-evalchemy \
-    --results-dir eval/standard_evalchemy/results
+    --results-dir results
 ```
 
 !!! note "Pipeline Compatibility"

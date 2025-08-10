@@ -137,7 +137,7 @@ For consistent execution environments and simplified deployment, use the Docker-
 ### Building the Image
 
 ```bash
-docker build . -f docker/nvidia_eval.Dockerfile -t nvidia-benchmark:latest --no-cache
+docker build -f docker/nvidia-eval.Dockerfile -t nvidia-benchmark:latest .
 ```
 
 !!! warning "Build Requirements"
@@ -149,10 +149,10 @@ docker build . -f docker/nvidia_eval.Dockerfile -t nvidia-benchmark:latest --no-
 ```bash
 docker run --rm \
   --network host \
-  -v $(pwd)/results:/workspace/output \
+  -v $(pwd)/results:/app/results \
   -e MODEL_ENDPOINT="http://localhost:8080/v1" \
   -e MODEL_NAME="facebook/opt-125m" \
-  -e OUTPUT_DIR="run-001" \
+  -e OUTPUT_DIR="/app/results" \
   -e EVAL_TYPE="aime" \
   -e MAX_TOKENS="512" \
   nvidia-benchmark:latest
@@ -175,7 +175,7 @@ docker run --rm \
 After running evaluations, you'll find results organized as:
 
 ```
-output/
+results/
 ├── results_livecodebench/     # LiveCodeBench inference results
 ├── results_aime24/            # AIME24 inference results
 ├── results_aime25/            # AIME25 inference results
