@@ -30,12 +30,12 @@ RUN pip install --upgrade pip setuptools wheel packaging cmake ninja setuptools-
 RUN git clone https://github.com/vllm-project/vllm.git /tmp/vllm
 WORKDIR /tmp/vllm
 
-RUN pip install -v -r requirements/cpu.txt \
-    --extra-index-url https://download.pytorch.org/whl/cpu && \
-    VLLM_TARGET_DEVICE=cpu python setup.py install
+# RUN pip install -v -r requirements/cpu.txt \
+#     --extra-index-url https://download.pytorch.org/whl/cpu && \
+#     VLLM_TARGET_DEVICE=cpu python setup.py install
 
 # Use below for linux/amd
-# RUN pip install vllm[cpu] --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install vllm[cpu] --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Copy benchmarks directory
 RUN mkdir -p /app && \
@@ -86,11 +86,11 @@ RUN cp /app/scripts/*.sh /app/ && \
 RUN mkdir -p /app/results && chmod 777 /app/results
 RUN mkdir -p /app/parsed && chmod 777 /app/parsed
 
-# Create non-root user (matching working version)
-RUN useradd --create-home --shell /bin/bash benchuser && \
-    chown -R benchuser:benchuser /app /opt/venv
+# Create non-root user (standardized)
+RUN useradd --create-home --shell /bin/bash evaluser && \
+    chown -R evaluser:evaluser /app /opt/venv
 
-USER benchuser
+USER evaluser
 
 # Standardized environment variables
 ENV EVAL_FRAMEWORK="vllm-benchmark" \
@@ -123,7 +123,7 @@ ENTRYPOINT ["/app/run_vllm_benchmark.sh"]
 CMD []
 
 # Standardized usage documentation
-# docker build -f docker/vllm-benchmark.standardized.Dockerfile -t vllm-eval/vllm-benchmark:latest .
+# docker build -f docker/vllm-benchmark.Dockerfile -t vllm-eval/vllm-benchmark:latest .
 #
 # docker run --rm \
 #   -v $(pwd)/results:/app/results \

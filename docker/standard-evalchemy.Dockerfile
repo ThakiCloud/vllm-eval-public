@@ -106,7 +106,7 @@ ENTRYPOINT ["/app/eval/standard_evalchemy/run_evalchemy.sh"]
 CMD []
 
 # Standardized usage documentation
-# docker build --build-arg CACHEBUST="$(date +%s)" -f docker/standard-evalchemy.standardized.Dockerfile -t vllm-eval/standard-evalchemy:latest .
+# docker build -f docker/standard-evalchemy.Dockerfile -t vllm-eval/standard-evalchemy:latest .
 #
 # docker run --rm \
 #   -v $(pwd)/results:/app/results \

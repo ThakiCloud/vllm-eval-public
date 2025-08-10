@@ -125,21 +125,32 @@ RUN sed -i 's/--max-output-len "${MAX_TOKENS}"/--max-output-len "${MAX_TOKENS:-3
 # Set execution permissions
 RUN chmod +x /app/*.sh
 
-# Create directories (adapted from working version)
-RUN mkdir -p /app/cache /app/output
+# Create directories (standardized)
+RUN mkdir -p /app/cache /app/results /app/parsed
 
-# Environment variables (using names from working version)
+# Create non-root user (standardized)
+RUN useradd --create-home --shell /bin/bash evaluser && \
+    chown -R evaluser:evaluser /app
+
+USER evaluser
+
+# Environment variables (standardized with results/parsed)
 ENV EVAL_FRAMEWORK="nvidia-eval" \
     MODEL_ENDPOINT="http://localhost:8000/v1" \
-    OUTPUT_DIR="/app/output" \
+    OUTPUT_DIR="/app/results" \
+    PARSED_DIR="/app/parsed" \
     MAX_TOKENS="32768" \
     EVAL_TYPE="both" \
     LOG_LEVEL="INFO" \
     BACKEND_API="http://model-benchmark-backend-svc:8000" \
     PYTHONPATH="/app"
 
-# Standardized volumes (adapted for /app structure)
-VOLUME ["/app/output", "/app/cache"]
+# Standardized volumes
+VOLUME ["/app/results", "/app/parsed", "/app/cache"]
+
+# Standardized healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD test -x /usr/local/bin/test-network || exit 1
 
 # CMD section (matching working version logic but adapted for /app)
 CMD echo "=== Starting AceReason Evaluation Toolkit ===" && \
@@ -160,25 +171,25 @@ CMD echo "=== Starting AceReason Evaluation Toolkit ===" && \
 # Labels (from working version)
 LABEL description="Optimized lightweight Docker image for AceReason Toolkit - API mode only with network fixes"
 
-# Usage documentation (adapted from working version)
-# docker build -f docker/nvidia-eval.standardized.Dockerfile -t vllm-eval/nvidia-eval:latest .
+# Usage documentation (updated to new filename)
+# docker build -f docker/nvidia-eval.Dockerfile -t vllm-eval/nvidia-eval:latest .
 #
 # Run both AIME and LiveCodeBench:
 # docker run --rm \
-#   -v $(pwd)/output:/app/output \
+#   -v $(pwd)/results:/app/results \
 #   -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1" \
 #   -e MODEL_NAME="qwen3-8b" \
-#   -e OUTPUT_DIR="/app/output" \
+#   -e OUTPUT_DIR="/app/results" \
 #   -e EVAL_TYPE="both" \
 #   -e MAX_TOKENS="32768" \
 #   vllm-eval/nvidia-eval:latest
 #
 # Run only AIME:
 # docker run --rm \
-#   -v $(pwd)/output:/app/output \
+#   -v $(pwd)/results:/app/results \
 #   -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1" \
 #   -e MODEL_NAME="qwen3-8b" \
-#   -e OUTPUT_DIR="/app/output" \
+#   -e OUTPUT_DIR="/app/results" \
 #   -e EVAL_TYPE="aime" \
 #   -e MAX_TOKENS="32768" \
 #   vllm-eval/nvidia-eval:latest
