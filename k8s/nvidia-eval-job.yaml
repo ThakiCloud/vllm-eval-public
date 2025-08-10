@@ -1,0 +1,61 @@
+# Job for running VLLM evaluation
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nvidia-eval
+  labels:
+    app: vllm-eval
+spec:
+  # Cleanup after completion (2 minutes)
+  ttlSecondsAfterFinished: 120
+  
+  template:
+    metadata:
+      labels:
+        app: vllm-eval
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: nodepool
+                    operator: NotIn
+                    values:
+                      - "gpu"
+      restartPolicy: Never
+      imagePullSecrets: 
+        - name: ghcr-secret
+      containers:
+        - name: nvidia-eval
+          image: ghcr.io/thakicloud/nvidia-eval-linux:latest
+          imagePullPolicy: Always
+          
+          # Resource limits
+          resources:
+            requests:
+              cpu: "1" 
+              memory: "10Gi"
+            limits:
+              cpu: "2"
+              memory: "15Gi"
+          
+          # Environment variables (see Dockerfile)
+          env:
+            - name: MODEL_ENDPOINT
+              value: "http://vllm.vllm:8000/v1" # Use K8s Service name
+              # value: "http://opt125m-inference-vllm-inference.vllm-system:8000/v1" # Use K8s Service name
+            - name: BACKEND_API
+              value: "http://10.7.60.71:10301"
+            #  - name: MODEL_NAME
+            #    value: "Qwen/Qwen3-30B-A3B"
+            #  - name: TOKENIZER
+            #    value: "Qwen/Qwen3-30B-A3B"
+            - name: MAX_TOKENS
+              value: "1400"
+            - name: EVAL_TYPE
+              value: "aime"
+            - name: OUTPUT_DIR
+              value: "output"
+            
