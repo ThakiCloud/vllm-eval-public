@@ -1,139 +1,62 @@
 site_name: VLLM 모델 성능 자동 평가 시스템
-site_description: 쿠버네티스 환경에서 VLLM 모델의 품질을 지속적으로 모니터링하고 평가하는 CI/CD 파이프라인
-site_author: ThakiCloud
-site_url: https://your-org.github.io/vllm-eval
+repo_name: thakicloud/vllm-eval-public
+repo_url: https://github.com/thakicloud/vllm-eval-public
 
-# Repository
-repo_name: your-org/vllm-eval
-repo_url: https://github.com/your-org/vllm-eval
-edit_uri: edit/main/docs/
-
-# Configuration
 theme:
   name: material
-  language: ko
   palette:
     # Palette toggle for light mode
     - scheme: default
-      primary: blue
-      accent: orange
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
-      primary: blue
-      accent: orange
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  font:
-    text: Noto Sans KR
-    code: Roboto Mono
-  features:
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.sections
-    - navigation.expand
-    - navigation.path
-    - navigation.indexes
-    - toc.follow
-    - search.suggest
-    - search.highlight
-    - search.share
-    - content.tabs.link
-    - content.code.copy
-    - content.code.annotate
-  icon:
-    repo: fontawesome/brands/github
-    edit: material/pencil
-    view: material/eye
 
-# Plugins
-plugins:
-  - search:
-      lang: ko
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [eval, scripts]
-          options:
-            docstring_style: google
-            show_source: true
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: date
-  - minify:
-      minify_html: true
-
-# Extensions
 markdown_extensions:
-  - abbr
   - admonition
-  - attr_list
-  - def_list
-  - footnotes
-  - md_in_html
   - toc:
       permalink: true
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
-  - pymdownx.details
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.magiclink:
-      repo_url_shorthand: true
-      user: your-org
-      repo: vllm-eval
-  - pymdownx.mark
-  - pymdownx.smartsymbols
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - pymdownx.tilde
+  - pymdownx.snippets
+  - pymdownx.superfences
 
-# Page tree
 nav:
+  - Home: index.md
   - 프로덕션 가이드: vllm-eval-prd.md
-  - 벤치마크 추가 방법: how-to-add-benchmark.md
-  - 로컬 테스팅 가이드: local-testing-guide.md
+  - Architecture:
+    - System Overview: architecture/system-overview.md
+    - Data Flow: architecture/data-flow.md
+    - Component Diagram: architecture/component-diagram.md
+    - Deployment Guide: architecture/deployment-guide.md
+    - Security Model: architecture/security-model.md
+  - Developer Guide:
+    - Quick Start: developer/quick-start.md
+    - Development Setup: developer/development-setup.md
+    - Coding Standards: developer/coding-standards.md
+    - Testing Guide: developer/testing-guide.md
+    - CI/CD Pipeline: developer/ci-cd-pipeline.md
+  - User Guide:
+    - Getting Started: user/getting-started.md
+    - Benchmark Configuration: user/benchmark-configuration.md
+    - Result Interpretation: user/result-interpretation.md
+    - Custom Metrics: user/custom-metrics.md
+  - API Reference:
+    - Evalchemy API: api/evalchemy-api.md
+    - Deepeval API: api/deepeval-api.md
+    - NVIDIA Eval API: api/nvidia-eval-api.md
+    - VLLM Benchmark API: api/vllm-benchmark-api.md
+  - Operator Manual:
+    - Monitoring Guide: operations/monitoring-guide.md
+    - Troubleshooting: operations/troubleshooting.md
+    - Performance Tuning: operations/performance-tuning.md
+    - Backup and Recovery: operations/backup-recovery.md
+    - Scaling Guide: operations/scaling-guide.md
   - 기여하기: CONTRIBUTING.md
-
-# Extra configuration
-extra:
-  version:
-    provider: mike
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/your-org/vllm-eval
-    - icon: fontawesome/brands/slack
-      link: https://your-org.slack.com
-  generator: false
-
-# Extra CSS and JavaScript
-extra_css:
-  - stylesheets/extra.css
-
-extra_javascript:
-  - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
-
-# Copyright
-copyright: |
-  &copy; 2025 <a href="https://github.com/your-org">ThakiCloud</a> -
-  <a href="#__consent">쿠키 설정 변경</a>

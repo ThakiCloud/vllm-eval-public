@@ -6,7 +6,7 @@ metadata:
   labels:
     app: vllm-eval
 spec:
-  # 완료 후 정리 (2분)
+  # Cleanup after completion (2 minutes)
   ttlSecondsAfterFinished: 120
   
   template:
@@ -14,52 +14,43 @@ spec:
       labels:
         app: vllm-eval
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nodepool
+                    operator: NotIn
+                    values:
+                      - "gpu"
       restartPolicy: Never
-      securityContext:
-        fsGroup: 1000
       imagePullSecrets:
-      - name: ghcr-secret
+        - name: ghcr-secret
       containers:
         - name: evalchemy
-          image: your-images:latest
+          image: ghcr.io/thakicloud/evalchemy-linux:latest
           imagePullPolicy: Always
-          
-          # 환경 변수로 간단하게 설정
+
+          # Resource limits
+          resources:
+            requests:
+              cpu: "1"
+              memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "5Gi"
+          # Configure via environment variables
           env:
-            - name: VLLM_MODEL_ENDPOINT
-              value: "http://vllm:8000/v1/completions"
-          
-          # 실행 명령
-          args:
-            - "--endpoint"
-            - "$(VLLM_MODEL_ENDPOINT)"
-            - "--config"
-            - "/app/configs/evalchemy.json"
-          
-          # 결과 저장용 볼륨
-          volumeMounts:
-            - name: model-results-storage
-              mountPath: /app/eval/evalchemy/results
-            - name: parsed-results-storage
-              mountPath: /app/eval/evalchemy/parsed
-      
-      volumes:
-        # 호스트 경로 사용 (개발/테스트용)
-        # - name: model-results-storage
-        #   hostPath:
-        #     path: /Users/pyj/Documents/vllm-eval-results
-        #     type: DirectoryOrCreate
-        
-        # PersistentVolumeClaim 사용 (필요시 주석 해제)
-        - name: model-results-storage
-          persistentVolumeClaim:
-            claimName: model-results-pvc
-        - name: parsed-results-storage
-          persistentVolumeClaim:
-            claimName: parsed-results-pvc
-        
-        # NFS 사용:
-        # - name: results
-        #   nfs:
-        #     server: your-nfs-server.example.com
-        #     path: /exports/vllm-eval-results 
+            - name: MODEL_ENDPOINT
+              value: "http://vllm.vllm:8000/v1/completions" # Use K8s Service name
+              # value: "http://opt125m-inference-vllm-inference.vllm-system:8000/v1/completions" # Use K8s Service name
+            - name: BACKEND_API
+              value: "http://10.7.60.71:10301"
+          #  - name: MODEL_NAME
+          #    value: "Qwen/Qwen3-30B-A3B"
+          #  - name: TOKENIZER
+          #    value: "Qwen/Qwen3-30B-A3B"
+            - name: MAX_TOKENS
+              value: "1400"
+            - name: EVAL_CONFIG_PATH
+              value: "/app/configs/eval_config.json"

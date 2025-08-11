@@ -1,12 +1,12 @@
 #! /bin/bash
 
 MODEL_NAME=$1
-OUTPUT_FOLDER_NAME=$2
+OUTPUT_DIR=$2
 GPUS=$3
-OUT_SEQ_LEN=$4
+MAX_TOKENS=$4
 
 check_model_endpoint() {
-    local base_url=${API_BASE}
+    local base_url=${MODEL_ENDPOINT}
     local endpoint="${base_url}/models"
 
     # JSON 응답 받아오기
@@ -66,21 +66,21 @@ echo "===================================="
 # AIME 24 Generation
 echo "🚀 Starting AIME 2024 inference..."
 for seed in ${seed_list_aime24[@]}; do
-    bash generate_aime.sh ${MODEL_NAME} ${seed} aime24 ${OUTPUT_FOLDER_NAME} ${MODEL_TYPE} ${GPUS} ${OUT_SEQ_LEN}
+    bash generate_aime.sh ${MODEL_NAME} ${seed} aime24 ${OUTPUT_DIR} ${MODEL_TYPE} ${GPUS} ${MAX_TOKENS}
 done
 
 echo "🔍 Starting AIME 2024 evaluation..."
-if [ -d "${OUTPUT_FOLDER_NAME}" ]; then
-    python evaluate_aime.py --modelfolder ${OUTPUT_FOLDER_NAME} --test_data data/aime24.jsonl
+if [ -d "${OUTPUT_DIR}" ]; then
+    python evaluate_aime.py --generation-path ${OUTPUT_DIR} --question-path data/aime24.jsonl
     
     # 결과 파일 확인 및 이동
-    if [ -f "${OUTPUT_FOLDER_NAME}/aime24_evaluation_results.json" ]; then
-        echo "✅ AIME 2024 evaluation completed! Results saved to ${OUTPUT_FOLDER_NAME}/aime24_evaluation_results.json"
+    if [ -f "${OUTPUT_DIR}/aime24_evaluation_results.json" ]; then
+        echo "✅ AIME 2024 evaluation completed! Results saved to ${OUTPUT_DIR}/aime24_evaluation_results.json"
     else
         echo "⚠️  Warning: AIME 2024 evaluation results file not found"
     fi
 else
-    echo "❌ Error: Output folder ${OUTPUT_FOLDER_NAME} not found for AIME 2024"
+    echo "❌ Error: Output folder ${OUTPUT_DIR} not found for AIME 2024"
 fi
 
 echo ""
@@ -88,21 +88,21 @@ echo ""
 # AIME 25 Generation
 echo "🚀 Starting AIME 2025 inference..."
 for seed in ${seed_list_aime25[@]}; do
-    bash generate_aime.sh ${MODEL_NAME} ${seed} aime25 ${OUTPUT_FOLDER_NAME} ${MODEL_TYPE} ${GPUS} ${OUT_SEQ_LEN}
+    bash generate_aime.sh ${MODEL_NAME} ${seed} aime25 ${OUTPUT_DIR} ${MODEL_TYPE} ${GPUS} ${MAX_TOKENS}
 done
 
 echo "🔍 Starting AIME 2025 evaluation..."
-if [ -d "${OUTPUT_FOLDER_NAME}" ]; then
-    python evaluate_aime.py --modelfolder ${OUTPUT_FOLDER_NAME} --test_data data/aime25.jsonl
+if [ -d "${OUTPUT_DIR}" ]; then
+    python evaluate_aime.py --generation-path ${OUTPUT_DIR} --question-path data/aime25.jsonl
     
     # 결과 파일 확인 및 이동
-    if [ -f "${OUTPUT_FOLDER_NAME}/aime25_evaluation_results.json" ]; then
-        echo "✅ AIME 2025 evaluation completed! Results saved to ${OUTPUT_FOLDER_NAME}/aime25_evaluation_results.json"
+    if [ -f "${OUTPUT_DIR}/aime25_evaluation_results.json" ]; then
+        echo "✅ AIME 2025 evaluation completed! Results saved to ${OUTPUT_DIR}/aime25_evaluation_results.json"
     else
         echo "⚠️  Warning: AIME 2025 evaluation results file not found"
     fi
 else
-    echo "❌ Error: Output folder ${OUTPUT_FOLDER_NAME} not found for AIME 2025"
+    echo "❌ Error: Output folder ${OUTPUT_DIR} not found for AIME 2025"
 fi
 
 echo "🎉 AIME pipeline completed!"
@@ -117,8 +117,8 @@ STANDARDIZE_SCRIPT="scripts/standardize_aime_results.py"
 if [ -f "${STANDARDIZE_SCRIPT}" ]; then
     python "${STANDARDIZE_SCRIPT}" \
         --model-id "${MODEL_NAME}" \
-        --input-dir "${OUTPUT_FOLDER_NAME}" \
-        --output-dir "${OUTPUT_FOLDER_NAME}/standardized"
+        --input-dir "${OUTPUT_DIR}" \
+        --output-dir "${OUTPUT_DIR}/standardized"
 
     if [ $? -eq 0 ]; then
         echo "✅ Standardization completed successfully."

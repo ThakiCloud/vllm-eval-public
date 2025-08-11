@@ -40,7 +40,7 @@ def _add_evaluation_argument(parser):
     group.add_argument('--temperature', type=float, default=0)
     group.add_argument('--topk', type=int, default=1)
     group.add_argument('--topp', type=float, default=1)
-    group.add_argument('--max-output-len', type=int, default=2048)
+    group.add_argument('--max-output-len', type=int, default=2048) # change it to smaller value for smaller model or local model testing due the limit of the output length
     group.add_argument('--start-idx', type=int, default=-1)
     group.add_argument('--end-idx', type=int, default=-1)
     group.add_argument('--tensor-parallel-size', type=int, default=1)

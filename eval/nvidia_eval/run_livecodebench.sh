@@ -1,12 +1,12 @@
 #! /bin/bash
 
 MODEL_NAME=$1
-OUTPUT_FOLDER_NAME=$2
+OUTPUT_DIR=$2
 GPUS=$3
-OUT_SEQ_LEN=$4
+MAX_TOKENS=$4
 
 check_model_endpoint() {
-    local base_url=${API_BASE}
+    local base_url=${MODEL_ENDPOINT}
     local endpoint="${base_url}/models"
 
     # JSON 응답 받아오기
@@ -47,25 +47,25 @@ python download_livecodebench.py
 
 # 추론 실행
 for seed in ${seed_list[@]}; do
-    bash generate_livecodebench.sh ${MODEL_NAME} ${seed} ${OUTPUT_FOLDER_NAME} ${MODEL_TYPE} ${GPUS} ${OUT_SEQ_LEN}
+    bash generate_livecodebench.sh ${MODEL_NAME} ${seed} ${OUTPUT_DIR} ${MODEL_TYPE} ${GPUS} ${MAX_TOKENS}
 done
 
 echo "🔍 Starting LiveCodeBench evaluation..."
 
 # 평가 실행 및 JSON 결과 생성
-if [ -d "${OUTPUT_FOLDER_NAME}" ]; then
-    echo "📊 Evaluating results in ${OUTPUT_FOLDER_NAME}..."
-    python evaluate_livecodebench.py -q data/livecodebench_problems.jsonl -g ${OUTPUT_FOLDER_NAME}
+if [ -d "${OUTPUT_DIR}" ]; then
+    echo "📊 Evaluating results in ${OUTPUT_DIR}..."
+    python evaluate_livecodebench.py -q data/livecodebench_problems.jsonl -g ${OUTPUT_DIR}
     
     # 결과 파일을 출력 폴더로 이동
     if [ -f "livecodebench_evaluation_results.json" ]; then
-        mv livecodebench_evaluation_results.json ${OUTPUT_FOLDER_NAME}/
-        echo "✅ Evaluation completed! Results saved to ${OUTPUT_FOLDER_NAME}/livecodebench_evaluation_results.json"
+        mv livecodebench_evaluation_results.json ${OUTPUT_DIR}/
+        echo "✅ Evaluation completed! Results saved to ${OUTPUT_DIR}/livecodebench_evaluation_results.json"
     else
         echo "⚠️  Warning: Evaluation results file not found"
     fi
 else
-    echo "❌ Error: Output folder ${OUTPUT_FOLDER_NAME} not found"
+    echo "❌ Error: Output folder ${OUTPUT_DIR} not found"
 fi
 
 echo "🎉 LiveCodeBench pipeline completed!"
@@ -74,8 +74,8 @@ echo "🎉 LiveCodeBench pipeline completed!"
 echo ""
 echo "📊 Standardizing LiveCodeBench results..."
 STANDARDIZE_SCRIPT="scripts/standardize_livecodebench_results.py"
-INPUT_JSON="${OUTPUT_FOLDER_NAME}/livecodebench_evaluation_results.json"
-OUTPUT_JSON="${OUTPUT_FOLDER_NAME}/standardized/standardized_livecodebench_evaluation_results.json"
+INPUT_JSON="${OUTPUT_DIR}/livecodebench_evaluation_results.json"
+OUTPUT_JSON="${OUTPUT_DIR}/standardized/standardized_livecodebench_evaluation_results.json"
 
 if [ -f "${STANDARDIZE_SCRIPT}" ]; then
     if [ -f "${INPUT_JSON}" ]; then

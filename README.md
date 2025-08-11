@@ -66,14 +66,167 @@ Helm 차트를 사용하여 쿠버네티스 애플리케이션(ClickHouse, Grafa
 - 로컬 실행·디버그용 유틸리티 스크립트 포함
 
 ### `docker/`
-- **`deepeval.Dockerfile`** – deepeval과 테스트 코드 포함
-- **`evalchemy.Dockerfile`** – mlfoundations/Evalchemy 기반 평가 컨테이너
-- **`legacy-evalchemy.Dockerfile`** – 기존 lm-eval 기반 컨테이너 (호환성 유지)
-- **`workflow-tools.Dockerfile`** – yq, awscli, mc 등 워크플로 보조 툴
+- **`deepeval.Dockerfile`** – Deepeval 기반 PyTest 평가 러너
+- **`evalchemy.Dockerfile`** – Evalchemy 기반 표준 벤치마크 러너
+- **`standard-evalchemy.Dockerfile`** – 표준화된 Evalchemy 하네스 이미지
+- **`nvidia-eval.Dockerfile`** – AIME/LiveCodeBench 등 NVIDIA 평가 러너
 - **`vllm-benchmark.Dockerfile`** – VLLM 공식 benchmark_serving.py 기반 성능 측정 컨테이너
 
 ### `Makefile`
 - `make kind-deploy`, `make helm-install`, `make run-tests` 등 공통 타깃
+
+## 🐳 Docker 이미지: 빌드 & 실행 예시
+
+아래 예시는 각 이미지의 대표적인 빌드/실행 방법입니다. 플랫폼별 상세 명령은 `docker/README.md`를 참고하세요.
+
+### Evalchemy
+
+```bash
+# Build (linux/amd64)
+docker buildx build --platform linux/amd64 \
+  -f docker/evalchemy.Dockerfile \
+  -t ghcr.io/thakicloud/evalchemy-linux:latest .
+
+# Run
+docker run --rm \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
+  -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
+  -e MODEL_NAME="qwen3-8b" \
+  -e LOG_LEVEL="DEBUG" \
+  ghcr.io/thakicloud/evalchemy-linux:latest
+```
+
+### Standard Evalchemy
+
+```bash
+# Build (linux/amd64)
+docker buildx build --platform linux/amd64 \
+  -f docker/standard-evalchemy.Dockerfile \
+  -t ghcr.io/thakicloud/standard-evalchemy-linux:latest .
+
+# Run
+docker run --rm \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
+  -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1/completions" \
+  -e MODEL_NAME="qwen3-8b" \
+  ghcr.io/thakicloud/standard-evalchemy-linux:latest
+```
+
+### NVIDIA Eval (AIME / LiveCodeBench)
+
+```bash
+# Build (linux/amd64)
+docker buildx build --platform linux/amd64 \
+  -f docker/nvidia-eval.Dockerfile \
+  -t ghcr.io/thakicloud/nvidia-eval-linux:latest .
+
+# Run (AIME)
+docker run --rm \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
+  -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1" \
+  -e MODEL_NAME="qwen3-8b" \
+  -e EVAL_TYPE="aime" \
+  -e MAX_TOKENS="32768" \
+  ghcr.io/thakicloud/nvidia-eval-linux:latest
+
+# Run (AIME + LiveCodeBench)
+docker run --rm \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
+  -e MODEL_ENDPOINT="http://host.docker.internal:8000/v1" \
+  -e MODEL_NAME="qwen3-8b" \
+  -e EVAL_TYPE="both" \
+  ghcr.io/thakicloud/nvidia-eval-linux:latest
+```
+
+### VLLM Benchmark
+
+```bash
+# Build (linux/amd64)
+docker buildx build --platform linux/amd64 \
+  -f docker/vllm-benchmark.Dockerfile \
+  -t ghcr.io/thakicloud/vllm-benchmark-linux:latest .
+
+# Run
+docker run --rm \
+  --network host \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
+  -e MODEL_ENDPOINT="http://localhost:8080" \
+  -e MODEL_NAME="Qwen/Qwen2-0.5B" \
+  -e TOKENIZER="gpt2" \
+  ghcr.io/thakicloud/vllm-benchmark-linux:latest
+```
+
+## ☸️ Kubernetes에서 실행 (k8s/)
+
+다음 Job 매니페스트는 `k8s/` 폴더에 포함되어 있으며, 기본 설정으로 바로 실행할 수 있습니다. 이미지 풀을 위해 GHCR 시크릿이 필요합니다.
+
+### 사전 준비: GHCR 이미지 Pull Secret
+
+```bash
+kubectl create secret docker-registry ghcr-secret \
+  --docker-server=ghcr.io \
+  --docker-username="<your_github_username>" \
+  --docker-password="<your_github_pat>"
+```
+
+### 공통 실행/모니터링
+
+```bash
+# 적용
+kubectl apply -f k8s/evalchemy-job.yaml
+kubectl apply -f k8s/standard-evalchemy-job.yaml
+kubectl apply -f k8s/vllm-benchmark-job.yaml
+kubectl apply -f k8s/nvidia-eval-job.yaml
+
+# 상태 확인
+kubectl get jobs
+
+# 로그 확인
+kubectl logs -f job/evalchemy
+kubectl logs -f job/standard-evalchemy
+kubectl logs -f job/vllm-benchmark
+kubectl logs -f job/nvidia-eval
+```
+
+### 환경 변수 (매니페스트 기준)
+
+- Evalchemy (`k8s/evalchemy-job.yaml`)
+  - `MODEL_ENDPOINT="http://vllm.vllm:8000/v1/completions"`
+  - `BACKEND_API="http://10.7.60.71:10301"`
+  - `MAX_TOKENS="1400"`
+  - `EVAL_CONFIG_PATH="/app/configs/eval_config.json"`
+
+- Standard Evalchemy (`k8s/standard-evalchemy-job.yaml`)
+  - `MODEL_ENDPOINT="http://vllm.vllm:8000/v1/completions"`
+  - `BACKEND_API="http://10.7.60.71:10301"`
+  - `MAX_TOKENS="140"`
+  - `HF_TOKEN=""` (필요 시 설정)
+  - `EVAL_CONFIG_PATH="/app/configs/eval_config.json"`
+
+- VLLM Benchmark (`k8s/vllm-benchmark-job.yaml`)
+  - `MODEL_ENDPOINT="http://vllm.vllm:8000"` (Base URL)
+  - `RANDOM_INPUT_LEN="512"`
+  - `MAX_CONCURRENCY="1"`
+  - `BACKEND_API="http://10.7.60.71:10301"`
+  - `CONFIG_PATH="/app/configs/eval_config.json"`
+
+- NVIDIA Eval (`k8s/nvidia-eval-job.yaml`)
+  - `MODEL_ENDPOINT="http://vllm.vllm:8000/v1"`
+  - `BACKEND_API="http://10.7.60.71:10301"`
+  - `MAX_TOKENS="1400"`
+  - `EVAL_TYPE="aime"` (가능: `aime` | `lcb` | `both`)
+  - `OUTPUT_DIR="output"`
+
+### 참고 사항
+
+- Job들은 기본적으로 결과 디렉터리(`/app/results`, `/app/parsed`)를 컨테이너 내부에 생성합니다. 장기 보존이 필요하면 PVC 마운트를 추가하세요.
+- `nodeAffinity`가 CPU 노드 선호/고정으로 설정되어 있습니다. GPU가 필요한 워크로드의 경우 GPU 노드로 스케줄링 정책을 조정하세요.
+- `MODEL_ENDPOINT`는 각 프레임워크 기대 형식이 다릅니다. VLLM Benchmark는 Base URL, Evalchemy/Standard Evalchemy는 `/v1/completions`, NVIDIA Eval은 `/v1` Base를 사용합니다.
 
 ## 🚀 빠른 시작
 
@@ -110,21 +263,27 @@ VLLM 서빙 성능을 측정하는 독립적인 벤치마크 시스템입니다.
 ### 🏃‍♂️ 빠른 실행
 
 ```bash
-# 1. Docker 이미지 빌드
-docker build -f docker/vllm-benchmark.Dockerfile -t vllm-benchmark:latest .
+# 1. Docker 이미지 빌드 (예: linux/amd64)
+docker buildx build --platform linux/amd64 \
+  -f docker/vllm-benchmark.Dockerfile \
+  -t vllm-benchmark:latest .
 
-# 2. 단일 벤치마크 실행
+# 2. 단일 벤치마크 실행 (표준화된 경로/변수 사용)
 docker run --rm \
-  -v $(pwd)/results:/results \
-  -e VLLM_ENDPOINT=http://your-vllm-server:8000 \
+  --network host \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
+  -e MODEL_ENDPOINT=http://your-vllm-server:8000 \
   -e MODEL_NAME=Qwen/Qwen3-8B \
   -e MAX_CONCURRENCY=4 \
-  -e TZ=Asia/Seoul \
   vllm-benchmark:latest
 
 # 2-1. 샘플
-docker run -v $(pwd)/results:/results -v $(pwd)/parsed:/parsed \
-  -e VLLM_ENDPOINT=http://your-vllm-server:8000 \
+docker run --rm \
+  --network host \
+  -v $(pwd)/results:/app/results \
+  -v $(pwd)/parsed:/app/parsed \
+  -e MODEL_ENDPOINT=http://your-vllm-server:8000 \
   -e MODEL_NAME=Qwen/Qwen3-8B \
   -e SERVED_MODEL_NAME=qwen3-8b \
   -e MAX_CONCURRENCY=1 \
@@ -134,10 +293,7 @@ docker run -v $(pwd)/results:/results -v $(pwd)/parsed:/parsed \
 
 # 3. 다중 시나리오 벤치마크 실행
 chmod +x scripts/run_vllm_performance_benchmark.sh
-./scripts/run_vllm_performance_benchmark.sh
-
-# 3-1. 다중 시나리오 벤치마크 실행 + endpoint 지정
-VLLM_ENDPOINT=http://your-vllm-server:8000 ./scripts/run_vllm_performance_benchmark.sh
+MODEL_ENDPOINT=http://your-vllm-server:8000 ./scripts/run_vllm_performance_benchmark.sh
 
 # 4. 결과 분석
 python3 scripts/analyze_performance_results.py results/performance
@@ -145,7 +301,7 @@ python3 scripts/analyze_performance_results.py results/performance
 
 ### 📊 벤치마크 시나리오
 
-`configs/vllm_benchmark.yaml`에서 설정:
+`configs/vllm_benchmark.json`에서 설정:
 
 | 시나리오 | 설명 | 동시성 | 입력/출력 토큰 |
 |----------|------|--------|----------------|
@@ -157,8 +313,8 @@ python3 scripts/analyze_performance_results.py results/performance
 ### 🎛️ 환경변수 설정
 
 ```bash
-# 기본 설정
-VLLM_ENDPOINT=http://localhost:8000    # VLLM 서버 주소
+# 기본 설정 (표준화된 변수)
+MODEL_ENDPOINT=http://localhost:8000   # VLLM 서버 Base URL
 MODEL_NAME=Qwen/Qwen3-8B              # 모델 이름
 SERVED_MODEL_NAME=qwen3-8b            # 서빙 모델명
 MAX_CONCURRENCY=1                     # 최대 동시 요청

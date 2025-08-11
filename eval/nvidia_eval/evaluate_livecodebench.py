@@ -357,7 +357,7 @@ if __name__ == "__main__":
     
     # JSON 결과를 파일로 저장
     output_filename = "livecodebench_evaluation_results.json"
-    with open(output_filename, "w", encoding="utf-8") as f:
+    with open(f"{args.generation_path}/{output_filename}", "w", encoding="utf-8") as f:
         json.dump(results_json, f, indent=2, ensure_ascii=False)
     
     print(f"\n📊 Results saved to: {output_filename}")
