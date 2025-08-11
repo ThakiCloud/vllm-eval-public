@@ -1,19 +1,39 @@
-site_name: VLLM 모델 성능 자동 평가 시스템
+site_name: VLLM Model Auto-Evaluation System
+site_url: https://thakicloud.github.io/vllm-eval-public/
 repo_name: thakicloud/vllm-eval-public
 repo_url: https://github.com/thakicloud/vllm-eval-public
 
+plugins:
+  - search
+
+extra:
+  alternate:
+    - name: English
+      lang: en
+      link: /
+    - name: 한국어
+      lang: ko
+      link: /
+
 theme:
   name: material
+  features:
+    - navigation.top
+    - navigation.footer
+    - navigation.tabs
+  language: en
   palette:
-    # Palette toggle for light mode
-    - scheme: default
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    # Palette toggle for dark mode
-    - scheme: slate
+    # Use this when the system prefers LIGHT mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       toggle:
         icon: material/brightness-4
+        name: Switch to dark mode
+    # Use this when the system prefers DARK mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-7
         name: Switch to light mode
 
 markdown_extensions:
@@ -30,33 +50,34 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - 프로덕션 가이드: vllm-eval-prd.md
+  - Production Guide: vllm-eval-prd.md
   - Architecture:
-    - System Overview: architecture/system-overview.md
-    - Data Flow: architecture/data-flow.md
-    - Component Diagram: architecture/component-diagram.md
-    - Deployment Guide: architecture/deployment-guide.md
-    - Security Model: architecture/security-model.md
+      - System Overview: architecture/system-overview.md
+      - Data Flow: architecture/data-flow.md
+      - Component Diagram: architecture/component-diagram.md
+      - Deployment Guide: architecture/deployment-guide.md
+      - Security Model: architecture/security-model.md
   - Developer Guide:
-    - Quick Start: developer/quick-start.md
-    - Development Setup: developer/development-setup.md
-    - Coding Standards: developer/coding-standards.md
-    - Testing Guide: developer/testing-guide.md
-    - CI/CD Pipeline: developer/ci-cd-pipeline.md
+      - Quick Start: developer/quick-start.md
+      - Development Setup: developer/development-setup.md
+      - Coding Standards: developer/coding-standards.md
+      - Testing Guide: developer/testing-guide.md
+      - CI/CD Pipeline: developer/ci-cd-pipeline.md
   - User Guide:
-    - Getting Started: user/getting-started.md
-    - Benchmark Configuration: user/benchmark-configuration.md
-    - Result Interpretation: user/result-interpretation.md
-    - Custom Metrics: user/custom-metrics.md
+      - Getting Started: user/getting-started.md
+      - Benchmark Configuration: user/benchmark-configuration.md
+      - Result Interpretation: user/result-interpretation.md
+      - Custom Metrics: user/custom-metrics.md
   - API Reference:
-    - Evalchemy API: api/evalchemy-api.md
-    - Deepeval API: api/deepeval-api.md
-    - NVIDIA Eval API: api/nvidia-eval-api.md
-    - VLLM Benchmark API: api/vllm-benchmark-api.md
+      - Evalchemy API: api/evalchemy-api.md
+      - Deepeval API: api/deepeval-api.md
+      - NVIDIA Eval API: api/nvidia-eval-api.md
+      - VLLM Benchmark API: api/vllm-benchmark-api.md
+      - Container Deployment Guide: api/docker-api.md
   - Operator Manual:
-    - Monitoring Guide: operations/monitoring-guide.md
-    - Troubleshooting: operations/troubleshooting.md
-    - Performance Tuning: operations/performance-tuning.md
-    - Backup and Recovery: operations/backup-recovery.md
-    - Scaling Guide: operations/scaling-guide.md
-  - 기여하기: CONTRIBUTING.md
+      - Monitoring Guide: operations/monitoring-guide.md
+      - Troubleshooting: operations/troubleshooting.md
+      - Performance Tuning: operations/performance-tuning.md
+      - Backup and Recovery: operations/backup-recovery.md
+      - Scaling Guide: operations/scaling-guide.md
+  - Contributing: CONTRIBUTING.md
