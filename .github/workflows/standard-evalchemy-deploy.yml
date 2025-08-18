@@ -57,7 +57,7 @@ jobs:
           echo "new_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
 
       - name: 📥 Checkout Manifest Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ThakiCloud/vllm-manifests-public
           token: ${{ secrets.MANIFESTS_SECRET }}
