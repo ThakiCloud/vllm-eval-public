@@ -139,7 +139,7 @@ Issues = "https://github.com/your-org/vllm-eval/issues"
 Changelog = "https://github.com/your-org/vllm-eval/blob/main/CHANGELOG.md"
 
 [project.scripts]
-vllm-eval = "vllm_eval_cli.main:cli"
+vllm-eval = "vllm_eval_cli.main:main"
 dedup-datasets = "scripts.dedup_datasets:main"
 aggregate-metrics = "scripts.aggregate_metrics:main"
 validate-schemas = "scripts.validate_schemas:main"

@@ -196,6 +196,120 @@ def clean(
 
 
 @app.command()
+def validate(
+    ctx: typer.Context,
+    config_file: Optional[Path] = typer.Option(None, "--config", "-c", help="Configuration file to validate"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed validation results"),
+) -> None:
+    """✓ Validate configuration and system setup"""
+    print_header("Configuration Validation")
+    
+    # Use provided config file or default
+    if config_file:
+        config_manager = ConfigManager(config_file=config_file)
+    else:
+        config_manager = ctx.obj["config_manager"]
+    
+    validation_errors = []
+    validation_warnings = []
+    
+    print_info(f"🔍 Validating configuration file: {config_manager.config_file}")
+    
+    # Check if config file exists
+    if not config_manager.config_file.exists():
+        validation_errors.append(f"Configuration file not found: {config_manager.config_file}")
+        print_error("Configuration file not found")
+        return
+    
+    # Validate configuration schema
+    try:
+        config_issues = config_manager.validate_config()
+        if config_issues:
+            validation_errors.extend(config_issues)
+        else:
+            print_success("✓ Configuration schema is valid")
+    except Exception as e:
+        validation_errors.append(f"Configuration validation failed: {e}")
+    
+    # Check endpoint connectivity (if configured)
+    if hasattr(config_manager.config, 'default_endpoint') and config_manager.config.default_endpoint:
+        try:
+            import requests
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            endpoint = config_manager.config.default_endpoint
+            print_info(f"🌐 Testing endpoint connectivity: {endpoint}")
+            
+            # Try a simple health check
+            response = requests.get(f"{endpoint.rstrip('/v1')}/health", timeout=5, verify=False)
+            if response.status_code == 200:
+                print_success("✓ Endpoint is accessible")
+            else:
+                validation_warnings.append(f"Endpoint returned status {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            validation_warnings.append(f"Endpoint connectivity issue: {e}")
+        except ImportError:
+            validation_warnings.append("Cannot test endpoint (requests library not available)")
+    
+    # Check results directory
+    if hasattr(config_manager.config.system, 'results_dir'):
+        results_dir = config_manager.config.system.results_dir
+        print_info(f"📁 Checking results directory: {results_dir}")
+        
+        try:
+            results_dir.mkdir(parents=True, exist_ok=True)
+            # Test write permissions
+            test_file = results_dir / ".write_test"
+            test_file.write_text("test")
+            test_file.unlink()
+            print_success("✓ Results directory is writable")
+        except Exception as e:
+            validation_errors.append(f"Results directory issue: {e}")
+    
+    # Check framework configurations
+    print_info("🔧 Validating framework configurations...")
+    available_frameworks = get_available_adapters()
+    enabled_frameworks = []
+    
+    for framework in available_frameworks.keys():
+        try:
+            framework_config = config_manager.get_framework_config(framework)
+            if framework_config.enabled:
+                enabled_frameworks.append(framework)
+                print_success(f"✓ {framework} is enabled and configured")
+            elif verbose:
+                print_info(f"- {framework} is disabled")
+        except Exception as e:
+            validation_warnings.append(f"Framework {framework} configuration issue: {e}")
+    
+    if not enabled_frameworks:
+        validation_warnings.append("No frameworks are enabled")
+    else:
+        print_success(f"✓ {len(enabled_frameworks)} frameworks enabled: {', '.join(enabled_frameworks)}")
+    
+    # Summary
+    console.print()
+    if validation_errors:
+        print_error(f"❌ Found {len(validation_errors)} validation errors:")
+        for error in validation_errors:
+            print_error(f"  • {error}")
+    
+    if validation_warnings:
+        print_warning(f"⚠️ Found {len(validation_warnings)} warnings:")
+        for warning in validation_warnings:
+            print_warning(f"  • {warning}")
+    
+    if not validation_errors and not validation_warnings:
+        print_success("🎉 Configuration validation passed! No issues found.")
+    elif not validation_errors:
+        print_success("✓ Configuration is valid (with warnings)")
+    else:
+        print_error("❌ Configuration validation failed")
+        raise typer.Exit(1)
+
+
+@app.command()
 def logs(
     ctx: typer.Context,
     lines: int = typer.Option(50, "--lines", "-n", help="Number of lines to show"),

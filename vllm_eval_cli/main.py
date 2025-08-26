@@ -27,7 +27,16 @@ console = create_console()
 # Create main Typer application
 app = typer.Typer(
     name="vllm-eval",
-    help="🚀 VLLM Evaluation CLI - Unified interface for model evaluation systems",
+    help="🚀 VLLM Evaluation CLI - Unified interface for model evaluation systems\n\n"
+         "Supported frameworks:\n"
+         "• [bold blue]Evalchemy[/bold blue] - Comprehensive benchmark suite\n"
+         "• [bold green]NVIDIA Eval[/bold green] - Mathematical reasoning (AIME, LiveCodeBench)\n"
+         "• [bold yellow]VLLM Benchmark[/bold yellow] - Performance and throughput testing\n"
+         "• [bold purple]Deepeval[/bold purple] - Custom metrics and RAG evaluation\n\n"
+         "[dim]Examples:[/dim]\n"
+         "  vllm-eval run quick my-model --endpoint http://localhost:8000\n"
+         "  vllm-eval run evalchemy my-model --batch-size 16\n"
+         "  vllm-eval run all my-model --frameworks evalchemy,deepeval",
     add_completion=True,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -67,15 +76,20 @@ def main(
     ),
 ) -> None:
     """
-    🚀 VLLM Evaluation CLI
+    🚀 [bold]VLLM Evaluation CLI[/bold]
 
     Unified command-line interface for running model evaluations across multiple frameworks:
-    • Evalchemy benchmarks
-    • NVIDIA Eval suite
-    • VLLM performance benchmarks
-    • Deepeval testing
+    • [blue]Evalchemy[/blue] - Standard benchmarks (MMLU, HumanEval, etc.)
+    • [green]NVIDIA Eval[/green] - Mathematical reasoning (AIME, LiveCodeBench)
+    • [yellow]VLLM Benchmark[/yellow] - Performance metrics (TTFT, TPOT, throughput)
+    • [purple]Deepeval[/purple] - Custom metrics and RAG evaluation
 
-    Use 'vllm-eval COMMAND --help' for detailed help on specific commands.
+    [dim]Quick start:[/dim]
+    [bold]vllm-eval setup[/bold]              - Run setup wizard
+    [bold]vllm-eval run quick my-model[/bold] - Quick evaluation with defaults
+    [bold]vllm-eval doctor[/bold]            - Diagnose configuration issues
+
+    Use [bold]'vllm-eval COMMAND --help'[/bold] for detailed help on specific commands.
     """
     # Store global options in context
     ctx.ensure_object(dict)
@@ -120,6 +134,22 @@ def setup(
     setup_wizard(interactive=interactive, force=force)
 
 
+@app.command(name="setup-deps")
+def setup_deps(
+    frameworks: str = typer.Option(
+        "all", 
+        "--frameworks", 
+        "-f", 
+        help="Comma-separated list of frameworks (evalchemy,deepeval,nvidia,vllm_benchmark,all)"
+    ),
+) -> None:
+    """📦 Install dependencies for evaluation frameworks"""
+    from vllm_eval_cli.commands.setup import setup_dependencies
+    
+    framework_list = [f.strip() for f in frameworks.split(",")]
+    setup_dependencies(framework_list)
+
+
 @app.command()
 def version() -> None:
     """📋 Show version information"""
@@ -148,6 +178,11 @@ def cli() -> None:
         console.print(f"[red]❌ Unexpected error: {e}[/red]")
         console.print("\n[dim]Use --debug flag for detailed error information[/dim]")
         sys.exit(1)
+
+
+def main() -> None:
+    """Main entry point for setuptools console scripts"""
+    cli()
 
 
 if __name__ == "__main__":

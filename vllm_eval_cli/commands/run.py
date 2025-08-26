@@ -86,7 +86,7 @@ def evalchemy(
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(name="standard-evalchemy")
 def standard_evalchemy(
     ctx: typer.Context,
     model: str = typer.Argument(..., help="Model name or identifier"),
@@ -139,7 +139,7 @@ def standard_evalchemy(
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(name="nvidia")
 def nvidia(
     ctx: typer.Context,
     model: str = typer.Argument(..., help="Model name or identifier"),
@@ -195,7 +195,7 @@ def nvidia(
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(name="vllm-benchmark")
 def vllm_benchmark(
     ctx: typer.Context,
     model: str = typer.Argument(..., help="Model name or identifier"),
@@ -307,7 +307,12 @@ def all(
     ctx: typer.Context,
     model: str = typer.Argument(..., help="Model name or identifier"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory"),
+    frameworks: Optional[str] = typer.Option(None, "--frameworks", "-f", 
+                                           help="Comma-separated list of frameworks to run"),
+    endpoint: Optional[str] = typer.Option(None, "--endpoint", "-e", help="Default API endpoint URL"),
     parallel: bool = typer.Option(False, "--parallel", "-p", help="Run frameworks in parallel"),
+    continue_on_error: bool = typer.Option(True, "--continue-on-error/--stop-on-error", 
+                                         help="Continue running other frameworks if one fails"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be executed"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
 ) -> None:
@@ -319,14 +324,24 @@ def all(
     # Get enabled frameworks
     enabled_frameworks = []
     available_frameworks = get_available_adapters()
-
-    for framework in available_frameworks.keys():
-        try:
-            framework_config = config_manager.get_framework_config(framework)
-            if framework_config.enabled:
+    
+    if frameworks:
+        # Use user-specified frameworks
+        requested_frameworks = [f.strip() for f in frameworks.split(",")]
+        for framework in requested_frameworks:
+            if framework in available_frameworks:
                 enabled_frameworks.append(framework)
-        except Exception:
-            continue
+            else:
+                print_warning(f"Framework '{framework}' not available. Available: {', '.join(available_frameworks.keys())}")
+    else:
+        # Use enabled frameworks from configuration
+        for framework in available_frameworks.keys():
+            try:
+                framework_config = config_manager.get_framework_config(framework)
+                if framework_config.enabled:
+                    enabled_frameworks.append(framework)
+            except Exception:
+                continue
 
     if not enabled_frameworks:
         print_warning("No frameworks are enabled in configuration")
@@ -352,7 +367,12 @@ def all(
             task = progress.add_task(f"Running {framework}...", total=None)
 
             try:
-                adapter = create_adapter(framework, config_manager)
+                # Create adapter with default endpoint if provided
+                adapter_kwargs = {}
+                if endpoint:
+                    adapter_kwargs["endpoint"] = endpoint
+                    
+                adapter = create_adapter(framework, config_manager, **adapter_kwargs)
                 result = adapter.run_evaluation(
                     model=model,
                     output_dir=output / framework if output else None,
@@ -365,12 +385,20 @@ def all(
                     progress.update(task, description=f"✅ {framework} completed")
                 else:
                     progress.update(task, description=f"❌ {framework} failed")
+                    if not continue_on_error:
+                        progress.remove_task(task)
+                        print_error(f"Stopping execution due to {framework} failure")
+                        break
 
             except Exception as e:
                 results[framework] = None
                 progress.update(task, description=f"❌ {framework} error")
                 if verbose:
                     print_error(f"{framework} failed: {e}")
+                if not continue_on_error:
+                    progress.remove_task(task)
+                    print_error(f"Stopping execution due to {framework} error: {e}")
+                    break
 
             progress.remove_task(task)
 
@@ -394,7 +422,68 @@ def all(
     console.print()
     print_info(f"Summary: {successful} successful, {failed} failed out of {len(enabled_frameworks)} frameworks")
 
-    if failed > 0:
+    if failed > 0 and failed == len(enabled_frameworks):
+        console.print()
+        print_warning("📝 Quick Setup Guide:")
+        print_info("  1. Run setup wizard: [bold]vllm-eval setup[/bold]")
+        print_info("  2. Install dependencies: [bold]pip install 'vllm-eval[full]'[/bold]")
+        print_info("  3. Start model server: [bold]vllm server --model your-model[/bold]")
+        print_info("  4. Validate setup: [bold]vllm-eval system validate[/bold]")
+        print_info("  5. Try quick test: [bold]vllm-eval run quick my-model --endpoint http://localhost:8000[/bold]")
+        console.print()
+        print_info("For detailed help, see: [dim]QUICK_START_GUIDE.md[/dim]")
+        raise typer.Exit(1)
+    elif failed > 0:
+        raise typer.Exit(1)
+
+
+@app.command()
+def quick(
+    ctx: typer.Context,
+    model: str = typer.Argument(..., help="Model name or identifier"),
+    endpoint: Optional[str] = typer.Option(None, "--endpoint", "-e", help="API endpoint URL"),
+    framework: str = typer.Option("evalchemy", "--framework", "-f", 
+                                 help="Framework to use (evalchemy, deepeval, nvidia, vllm-benchmark)"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be executed"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+) -> None:
+    """⚡ Quick evaluation with minimal configuration"""
+    print_header("Quick Evaluation", f"Model: {model} | Framework: {framework}")
+    
+    config_manager = ctx.obj["config_manager"]
+    
+    try:
+        # Create adapter with minimal configuration
+        adapter_kwargs = {}
+        if endpoint:
+            adapter_kwargs["endpoint"] = endpoint
+            
+        adapter = create_adapter(framework, config_manager, **adapter_kwargs)
+        
+        # Run evaluation with default settings
+        result = adapter.run_evaluation(
+            model=model,
+            output_dir=output,
+            dry_run=dry_run,
+            verbose=verbose,
+        )
+        
+        # Display results
+        if result.status == "success":
+            print_success(f"Quick {framework} evaluation completed successfully!")
+            if result.overall_score is not None:
+                print_info(f"Overall Score: {result.overall_score:.2f}%")
+        elif result.status == "dry_run":
+            print_info("Dry run completed - no actual execution performed")
+        else:
+            print_error(f"Evaluation failed: {result.error_message}")
+            raise typer.Exit(1)
+            
+    except Exception as e:
+        print_error(f"Quick evaluation failed: {e}")
+        if verbose:
+            console.print_exception()
         raise typer.Exit(1)
 
 
