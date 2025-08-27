@@ -1,0 +1,57 @@
+{
+  "benchmarks": [
+    {
+      "name": "quick_eval",
+      "tasks": ["hellaswag", "arc_easy", "arc_challenge"],
+      "few_shot": 5,
+      "limit": 100,
+      "description": "Quick evaluation with basic reasoning tasks"
+    },
+    {
+      "name": "comprehensive_eval", 
+      "tasks": ["hellaswag", "arc_easy", "arc_challenge", "winogrande", "truthfulqa_mc"],
+      "few_shot": 5,
+      "limit": 500,
+      "description": "Comprehensive evaluation with multiple reasoning tasks"
+    },
+    {
+      "name": "code_eval",
+      "tasks": ["humaneval", "mbpp"],
+      "few_shot": 0,
+      "limit": 50,
+      "description": "Code generation and completion tasks"
+    }
+  ],
+  "model_configs": {
+    "default": {
+      "batch_size": 8,
+      "max_length": 2048,
+      "device": "auto",
+      "dtype": "auto"
+    },
+    "large_model": {
+      "batch_size": 4,
+      "max_length": 4096,
+      "device": "auto",
+      "dtype": "auto"
+    },
+    "small_model": {
+      "batch_size": 16,
+      "max_length": 1024,
+      "device": "auto",
+      "dtype": "auto"
+    }
+  },
+  "generation_kwargs": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_tokens": 512,
+    "do_sample": false
+  },
+  "evaluation_settings": {
+    "output_path": "./results",
+    "log_samples": true,
+    "write_out": true,
+    "show_config": true
+  }
+}

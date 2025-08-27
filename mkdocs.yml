@@ -1,23 +1,46 @@
-site_name: VLLM 모델 성능 자동 평가 시스템
+site_name: vLLM Evaluation Benchmark
 repo_name: thakicloud/vllm-eval-public
 repo_url: https://github.com/thakicloud/vllm-eval-public
+site_url: https://thakicloud.github.io/vllm-eval-public/docs/
+edit_uri: edit/main/docs/
 
 theme:
   name: material
+  icon:
+    logo: material/chart-line-variant  # Performance/evaluation related icon
+    repo: fontawesome/brands/github     # GitHub icon for repository link
+  favicon: assets/favicon.png          # Custom favicon (optional)
+  features:
+    - navigation.tabs          # Enable top-level tabs in header
+    - navigation.tabs.sticky   # Keep tabs visible when scrolling
+    - navigation.sections      # Show sections in navigation
+    - navigation.expand        # Expand navigation sections by default
+    - navigation.indexes       # Enable navigation indexes for sections
+    - navigation.top           # Add "Back to top" button
+    - navigation.tracking      # Update URL with active anchor
+    - navigation.footer        # Add next/previous page navigation at bottom
+    - navigation.instant       # Instant loading for faster navigation
+    - toc.integrate           # Integrate table of contents with navigation
   palette:
     # Palette toggle for light mode
     - scheme: default
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-sunny
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-night
         name: Switch to light mode
 
 markdown_extensions:
   - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc:
       permalink: true
   - pymdownx.highlight:
@@ -26,11 +49,20 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 nav:
   - Home: index.md
-  - 프로덕션 가이드: vllm-eval-prd.md
+  - Production Guide: vllm-eval-prd.md
+  - CLI Guide:
+    - Overview: cli/overview.md
+    - Commands Reference: cli/commands.md
+    - Configuration: cli/configuration.md
+    - Troubleshooting: cli/troubleshooting.md
   - Architecture:
     - System Overview: architecture/system-overview.md
     - Data Flow: architecture/data-flow.md
@@ -53,10 +85,10 @@ nav:
     - Deepeval API: api/deepeval-api.md
     - NVIDIA Eval API: api/nvidia-eval-api.md
     - VLLM Benchmark API: api/vllm-benchmark-api.md
-  - Operator Manual:
+  - Operations:
     - Monitoring Guide: operations/monitoring-guide.md
     - Troubleshooting: operations/troubleshooting.md
     - Performance Tuning: operations/performance-tuning.md
     - Backup and Recovery: operations/backup-recovery.md
     - Scaling Guide: operations/scaling-guide.md
-  - 기여하기: CONTRIBUTING.md
+  - Contributing: CONTRIBUTING.md
