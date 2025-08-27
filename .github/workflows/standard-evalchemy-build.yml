@@ -20,7 +20,7 @@ jobs:
       standard-evalchemy: ${{ steps.filter.outputs.standard-evalchemy }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -42,7 +42,7 @@ jobs:
     
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: ⚙️ Set lowercase image name
         id: set_lowercase_name
