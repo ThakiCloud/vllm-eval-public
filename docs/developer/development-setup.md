@@ -541,7 +541,7 @@ docker info
 
 ### Getting Help
 
-- **Documentation**: Check [CLI Guide](../cli/overview.md) and [API Reference](../api/)
+- **Documentation**: Check [CLI Guide](../cli/overview.md) and [API Reference](../api/evalchemy-api.md)
 - **Issues**: Search existing GitHub issues
 - **Debugging**: Use `vllm-eval doctor --verbose`
 - **Community**: Engage in project discussions
@@ -554,7 +554,7 @@ docker info
 
 - **[Testing Guide](testing-guide.md)** - Comprehensive testing strategies
 - **[CLI Commands](../cli/commands.md)** - Understanding CLI architecture
-- **[API Integration](../api/)** - Framework-specific development
+- **[API Integration](../api/evalchemy-api.md)** - Framework-specific development
 - **[Architecture Overview](../architecture/system-overview.md)** - System design
 
 ### Advanced Development

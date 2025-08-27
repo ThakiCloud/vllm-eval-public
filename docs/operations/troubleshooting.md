@@ -811,7 +811,7 @@ vllm-eval system validate --comprehensive
 - **[CLI Troubleshooting](../cli/troubleshooting.md)** - CLI-specific issues
 - **[System Overview](../architecture/system-overview.md)** - Architecture reference
 - **[Configuration Guide](../user/benchmark-configuration.md)** - Configuration troubleshooting
-- **[API Documentation](../api/)** - Framework-specific issues
+- **[API Documentation](../api/evalchemy-api.md)** - Framework-specific issues
 
 ### External Resources
 

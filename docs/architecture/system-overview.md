@@ -397,7 +397,7 @@ make submit-workflow
 
 ### Core Documentation
 - **[CLI Guide](../cli/overview.md)** - Complete CLI usage and configuration
-- **[API Reference](../api/)** - Framework-specific integration details
+- **[API Reference](../api/evalchemy-api.md)** - Framework-specific integration details
 - **[User Guide](../user/getting-started.md)** - Getting started with evaluations
 
 ### Technical Documentation
@@ -407,7 +407,7 @@ make submit-workflow
 - **[Security Model](security-model.md)** - Security implementation details
 
 ### Operational Documentation
-- **[Operations Guide](../operations/)** - Running and maintaining the system
+- **[Operations Guide](../operations/monitoring-guide.md)** - Running and maintaining the system
 - **[Monitoring Guide](../operations/monitoring-guide.md)** - Observability and alerting
 - **[Troubleshooting](../operations/troubleshooting.md)** - Common issues and solutions
 

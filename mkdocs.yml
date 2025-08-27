@@ -4,10 +4,6 @@ repo_url: https://github.com/thakicloud/vllm-eval-public
 site_url: https://thakicloud.github.io/vllm-eval-public
 edit_uri: edit/main/docs/
 
-# Note: This documentation is maintained in English only.
-# Translation functionality is intentionally not included to maintain
-# consistency and focus on international collaboration.
-
 theme:
   name: material
   icon:
