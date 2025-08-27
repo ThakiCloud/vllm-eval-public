@@ -1,7 +1,7 @@
 site_name: vLLM Evaluation Benchmark
 repo_name: thakicloud/vllm-eval-public
 repo_url: https://github.com/thakicloud/vllm-eval-public
-site_url: https://thakicloud.github.io/vllm-eval-public/docs/
+site_url: https://thakicloud.github.io/vllm-eval-public
 edit_uri: edit/main/docs/
 
 theme:
@@ -91,4 +91,10 @@ nav:
     - Performance Tuning: operations/performance-tuning.md
     - Backup and Recovery: operations/backup-recovery.md
     - Scaling Guide: operations/scaling-guide.md
+  - Guides:
+    - CI/CD Guide: how-to-CICD.md
+    - Adding Benchmarks: how-to-add-benchmark.md
+    - Local Testing: local-testing-guide.md
+    - Local VLLM Evaluation: local-vllm-evaluation-guide.md
+    - Standard Evalchemy: standard-evalchemy-guide.md
   - Contributing: CONTRIBUTING.md

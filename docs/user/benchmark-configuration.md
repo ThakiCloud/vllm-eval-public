@@ -691,7 +691,7 @@ vllm-eval --debug --verbose config validate
 ### Advanced Topics
 - **[Result Interpretation](result-interpretation.md)** - Understanding evaluation results
 - **[Architecture Overview](../architecture/system-overview.md)** - System architecture
-- **[Operations Guide](../operations/)** - Production configuration management
+- **[Operations Guide](../operations/monitoring-guide.md)** - Production configuration management
 
 !!! success "Configuration Mastery"
     
